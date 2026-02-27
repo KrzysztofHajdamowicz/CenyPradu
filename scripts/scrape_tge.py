@@ -2,12 +2,16 @@
 """
 Scraper cen energii TGE — Rynek Dnia Następnego, Fixing I.
 
-Pobiera godzinowe ceny energii elektrycznej z:
-  https://wyniki.tge.pl/pl/wyniki/rdn/fixing-I/
+URL strony: https://tge.pl/energia-elektryczna-rdn?dateShow=DD-MM-YYYY
+            (dateShow = delivery_date - 1 dzień, format DD-MM-YYYY)
 
-i zapisuje jako JSON do data/prices/YYYY-MM-DD.json.
+Struktura HTML:
+  Tabela: #rdn  (klasy: table table-hover table-rdb)
+  Wiersze godzinowe: td[0]="YYYY-MM-DD_H01", td[1]="60", td[2]=cena Fixing I PLN/MWh
+  Wiersze 15-min:    td[0]="YYYY-MM-DD_Q00:15", td[1]="15" — ignorujemy
+  Data:    .kontrakt-date > small  ("dla dostawy w dniu DD-MM-YYYY")
 
-Format wyjściowy:
+Format wyjściowy (data/prices/YYYY-MM-DD.json):
   {
     "date": "2026-02-28",
     "scraped_at": "2026-02-27T10:05:32Z",
@@ -19,14 +23,8 @@ Format wyjściowy:
   }
 
 Uruchomienie:
-  python scripts/scrape_tge.py                        # data dostawy = jutro
-  DELIVERY_DATE=2026-03-01 python scripts/scrape_tge.py  # konkretna data
-
-WAŻNE po pierwszym uruchomieniu:
-  Otwórz https://wyniki.tge.pl/pl/wyniki/rdn/fixing-I/ w przeglądarce z DevTools
-  → Network → Fetch/XHR i sprawdź czy dane ładowane są przez ukryty API endpoint.
-  Jeśli tak — zastąp get_html_playwright() prostą funkcją requests/httpx,
-  co znacznie przyspieszy działanie scrapera.
+  python scripts/scrape_tge.py                             # data dostawy = jutro
+  DELIVERY_DATE=2026-03-01 python scripts/scrape_tge.py   # konkretna data (backfill)
 """
 
 import json
@@ -36,30 +34,29 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-TGE_URL = "https://wyniki.tge.pl/pl/wyniki/rdn/fixing-I/"
+TGE_BASE_URL = "https://tge.pl/energia-elektryczna-rdn"
 WARSAW_TZ = ZoneInfo("Europe/Warsaw")
 OUTPUT_DIR = "data/prices"
 
-# Sanity checks — ceny energii w Polsce (PLN/MWh)
+# Sanity checks — historyczny zakres cen energii w Polsce (PLN/MWh)
 MIN_PRICE = -500.0    # Ujemne ceny możliwe przy nadpodaży OZE
 MAX_PRICE = 10_000.0
 
-# Liczba godzin: 23 (spring-forward), 24 (normalny), 25 (fall-back)
+# Liczba godzin: 23 (spring-forward), 24 (normalny dzień), 25 (fall-back)
 MIN_HOURS = 23
 MAX_HOURS = 25
 
 
 # ---------------------------------------------------------------------------
-# Pobieranie HTML
+# Pobieranie HTML (Playwright + headless Chromium)
 # ---------------------------------------------------------------------------
 
 def get_html_playwright(url: str) -> str:
     """
-    Pobiera HTML strony przy użyciu Playwright (headless Chromium).
+    Pobiera wyrenderowany HTML strony przy użyciu Playwright (headless Chromium).
 
-    Wymaga zainstalowanego playwright i Chromium:
-      pip install playwright
-      playwright install --with-deps chromium
+    Strona https://tge.pl zwraca 403 dla zwykłych requestów HTTP — wymagana
+    pełna przeglądarka. Czeka na załadowanie tabeli #rdn.
     """
     from playwright.sync_api import sync_playwright
 
@@ -75,42 +72,27 @@ def get_html_playwright(url: str) -> str:
             timezone_id="Europe/Warsaw",
         )
         page = context.new_page()
-        page.set_extra_http_headers({
-            "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Referer": "https://wyniki.tge.pl/",
-        })
 
-        print(f"Ładowanie strony: {url}", file=sys.stderr)
+        print(f"Ładowanie: {url}", file=sys.stderr)
         page.goto(url, wait_until="domcontentloaded", timeout=60_000)
 
-        # Czekaj na tabelę z danymi
-        # WAŻNE: Po inspekcji strony zaktualizuj selektor do konkretnej tabeli Fixing I
+        # Czekaj na tabelę z cenami
         try:
-            page.wait_for_selector("table", timeout=30_000)
+            page.wait_for_selector("#rdn", timeout=30_000)
         except Exception:
             screenshot_path = "debug_screenshot.png"
             page.screenshot(path=screenshot_path)
             browser.close()
             raise RuntimeError(
-                "Tabela nie załadowała się w ciągu 30 sekund.\n"
-                f"Zrzut ekranu zapisany: {screenshot_path}\n"
-                "Sprawdź czy TGE nie zmieniło struktury strony."
+                "Tabela #rdn nie załadowała się.\n"
+                f"Zrzut ekranu: {screenshot_path}\n"
+                "Możliwe: strona TGE zmieniła strukturę lub jeszcze nie ma cen."
             )
-
-        # Dodatkowe oczekiwanie na wypełnienie tabeli przez JavaScript
-        try:
-            page.wait_for_function(
-                "() => document.querySelectorAll('table tr').length > 5",
-                timeout=15_000,
-            )
-        except Exception:
-            pass  # Kontynuuj — tabela może być gotowa z innymi selektorami
 
         html = page.content()
         browser.close()
 
-    print("HTML pobrany pomyślnie.", file=sys.stderr)
+    print("HTML pobrany.", file=sys.stderr)
     return html
 
 
@@ -118,137 +100,126 @@ def get_html_playwright(url: str) -> str:
 # Parsowanie HTML
 # ---------------------------------------------------------------------------
 
-def parse_html_table(html: str, delivery_date: date) -> dict[str, float]:
+def parse_html_table(html: str, delivery_date: date) -> list[float]:
     """
-    Parsuje HTML strony TGE i wyciąga ceny z kolumny Fixing I.
+    Parsuje HTML strony TGE i zwraca listę cen Fixing I (PLN/MWh)
+    w kolejności chronologicznej (H01, H02, ..., H24; 25 przy fall-back).
 
-    Zwraca słownik: etykieta_godziny → cena (PLN/MWh)
-    Przykład normalny:  {"01": 312.50, "02": 298.00, ..., "24": 300.00}
-    Fall-back (październik): {"01": ..., "02": ..., "02A": ..., "03": ..., "25": ...}
+    Struktura tabeli (#rdn):
+      - td[0]: identyfikator instrumentu, np. "2026-02-28_H01", "2026-02-28_Q00:15"
+      - td[1]: typ instrumentu: "60" = godzinowy, "15" = 15-minutowy
+      - td[2]: cena Fixing I (PLN/MWh), format: "312,50" lub "1 234,56" lub "-"
+      - td[3]: wolumen Fixing I (MWh) — ignorujemy
+      - ...
 
-    Format instrumentów w tabeli TGE: "YYYY-MM-DD_H01", "YYYY-MM-DD_H02A" itp.
-
-    WAŻNE: Po inspekcji strony w DevTools zweryfikuj:
-      1. Selektor tabeli (może być kilka tabel na stronie)
-      2. Indeks/nagłówek kolumny Fixing I
-      3. Format etykiet instrumentów
+    Filtrujemy tylko wiersze godzinowe: identyfikator kończy się na _H\\d{2}.
+    Kolejność wierszy w HTML jest chronologiczna (H01 ... H24/H25).
+    Na dzień fall-back H03 pojawi się dwukrotnie (25 wierszy łącznie).
     """
     from bs4 import BeautifulSoup
 
-    date_str = delivery_date.strftime("%Y-%m-%d")
     soup = BeautifulSoup(html, "lxml")
-    hour_to_price: dict[str, float] = {}
 
-    for table in soup.find_all("table"):
-        rows = table.find_all("tr")
-        if len(rows) < 2:
+    # Weryfikacja daty z nagłówka strony (ostrzeżenie, nie blokuje)
+    _verify_page_date(soup, delivery_date)
+
+    # Wyciągnij ciało tabeli
+    tbody = soup.select_one("#rdn > tbody")
+    if tbody is None:
+        print(
+            "ERROR: Nie znaleziono #rdn > tbody.\n"
+            "Sprawdź czy strona TGE nie zmieniła struktury.",
+            file=sys.stderr,
+        )
+        return []
+
+    prices: list[float] = []
+    for row in tbody.select("tr"):
+        tds = row.select("td")
+        if len(tds) < 3:
             continue
 
-        # Nagłówki z pierwszego wiersza (lub pierwszej grupy thead)
-        header_cells = rows[0].find_all(["th", "td"])
-        headers = [c.get_text(strip=True) for c in header_cells]
+        instrument = tds[0].get_text(strip=True)
 
-        if not headers:
+        # Filtruj tylko wiersze godzinowe: np. "2026-02-28_H01", "2026-02-28_H24"
+        if not re.search(r"_H\d{2}$", instrument):
             continue
 
-        fixing_col_idx = _find_fixing_column(headers)
-        if fixing_col_idx is None:
+        price_text = tds[2].get_text(strip=True)  # td[3] (1-indexed) = Fixing I kurs
+        price = _parse_price(price_text)
+        if price is None:
             print(
-                f"DEBUG: Tabela z nagłówkami {headers[:6]}... — brak kolumny Fixing I, pomijam.",
+                f"WARN: nie można sparsować ceny '{price_text}' ({instrument})",
                 file=sys.stderr,
             )
             continue
 
-        print(
-            f"Znaleziono kolumnę Fixing I: indeks {fixing_col_idx} "
-            f"(nagłówek: '{headers[fixing_col_idx]}')",
-            file=sys.stderr,
-        )
+        prices.append(price)
+        hour_label = instrument.split("_")[-1]  # "H01", "H02", ...
+        print(f"  {hour_label} → {price:.2f} PLN/MWh", file=sys.stderr)
 
-        # Wiersze danych
-        for row in rows[1:]:
-            cells = row.find_all(["td", "th"])
-            if not cells or fixing_col_idx >= len(cells):
-                continue
-
-            instrument = cells[0].get_text(strip=True)
-
-            # Dopasuj format: "YYYY-MM-DD_H01", "YYYY-MM-DD_H02A"
-            # Obsługuje też wariant z małą literą: "h01"
-            pattern = rf"^{re.escape(date_str)}_[Hh](\d{{2}}[A-Za-z]?)$"
-            match = re.match(pattern, instrument)
-            if not match:
-                continue
-
-            hour_label = match.group(1).upper()  # "01", "24", "02A"
-
-            price_text = cells[fixing_col_idx].get_text(strip=True)
-            price = _parse_price(price_text)
-            if price is None:
-                print(
-                    f"WARN: nie można sparsować ceny '{price_text}' dla {instrument}",
-                    file=sys.stderr,
-                )
-                continue
-
-            hour_to_price[hour_label] = price
-
-    return hour_to_price
+    return prices
 
 
-def _find_fixing_column(headers: list[str]) -> int | None:
+def _verify_page_date(soup, delivery_date: date) -> None:
     """
-    Znajdź indeks kolumny z ceną Fixing I.
+    Weryfikuje datę dostawy z elementu .kontrakt-date na stronie TGE.
+    Loguje ostrzeżenie jeśli nie pasuje — nie rzuca wyjątku.
 
-    Sprawdza kolejno kilka wariantów nazw nagłówków.
-    WAŻNE: Zweryfikuj z rzeczywistą stroną i zaktualizuj listę kandydatów!
+    Element .kontrakt-date ma strukturę:
+      <h4 class="kontrakt-date">
+        <a>Kontrakty</a>
+        <small>dla dostawy w dniu DD-MM-YYYY</small>
+      </h4>
     """
-    # Kandydaci w kolejności priorytetu — dopasowanie częściowe (case-insensitive)
-    candidates = [
-        "fixing i kurs",
-        "fixing 1 kurs",
-        "kurs fixing i",
-        "kurs fixing 1",
-        "fixing i",
-        "fixing 1",
-        "kurs jednolity",
-        "kurs fix",
-    ]
+    expected = delivery_date.strftime("%d-%m-%Y")
 
-    headers_lower = [h.lower().replace("\xa0", " ").strip() for h in headers]
+    for el in soup.select(".kontrakt-date"):
+        text = el.get_text(strip=True)
+        found_dates = re.findall(r"\d{2}-\d{2}-\d{4}", text)
+        if not found_dates:
+            continue
 
-    for candidate in candidates:
-        for i, h in enumerate(headers_lower):
-            if candidate in h:
-                return i
+        page_date = found_dates[-1]  # Data dostawy jest zazwyczaj ostatnią w tekście
+        if page_date == expected:
+            print(f"Data dostawy potwierdzona: {page_date}", file=sys.stderr)
+        else:
+            print(
+                f"WARN: data na stronie ({page_date}) ≠ oczekiwana ({expected}).\n"
+                "  Możliwe: TGE jeszcze nie opublikowało cen lub URL dateShow jest błędny.",
+                file=sys.stderr,
+            )
+        return
 
-    return None
+    print(
+        "WARN: nie znaleziono .kontrakt-date — pomijam weryfikację daty.",
+        file=sys.stderr,
+    )
 
 
 def _parse_price(text: str) -> float | None:
     """
-    Parsuje cenę z tekstu TGE.
+    Parsuje cenę z komórki tabeli TGE.
 
-    Obsługuje formaty:
-      - "312,50"    (format polski z przecinkiem)
-      - "312.50"    (format z kropką)
-      - "1 234,56"  (tysiące rozdzielone spacją)
-      - "1.234,56"  (tysiące z kropką, dziesiętne z przecinkiem)
-      - "-"         (brak ceny — pomijamy)
+    Obsługiwane formaty:
+      "312,50"    → 312.50  (format polski)
+      "1 234,56"  → 1234.56 (tysiące rozdzielone spacją)
+      "1.234,56"  → 1234.56 (tysiące z kropką, dziesiętne z przecinkiem)
+      "-"         → None    (brak ceny)
     """
-    text = text.strip().replace("\xa0", "").replace("\u202f", "")
+    text = text.strip().replace("\xa0", " ").replace("\u202f", " ")
 
-    if text in ("", "-", "—", "N/A", "n/a"):
+    if text in ("", "-", "—", "N/A", "n/a", "brak"):
         return None
 
-    # Usuń spacje jako separator tysięcy
+    # Usuń separatory tysięcy (spacja, twarda spacja)
     text = text.replace(" ", "")
 
     if "," in text and "." in text:
-        # Format "1.234,56" → "1234.56"
+        # "1.234,56" → "1234.56"
         text = text.replace(".", "").replace(",", ".")
     elif "," in text:
-        # Format "312,50" → "312.50"
+        # "312,50" → "312.50"
         text = text.replace(",", ".")
 
     try:
@@ -258,31 +229,29 @@ def _parse_price(text: str) -> float | None:
 
 
 # ---------------------------------------------------------------------------
-# Budowanie listy z timestampami
+# Budowanie listy z timestampami ISO 8601
 # ---------------------------------------------------------------------------
 
-def build_price_list(delivery_date: date, hour_to_price: dict[str, float]) -> list[dict]:
+def build_price_list(delivery_date: date, prices: list[float]) -> list[dict]:
     """
-    Konwertuje słownik etykiet TGE na posortowaną listę obiektów:
-        [{"time": "YYYY-MM-DD HH:MM:SS+HH:MM", "price": 312.50}, ...]
+    Konwertuje listę cen (w kolejności chronologicznej) na listę obiektów:
+        [{"time": "YYYY-MM-DD HH:MM:SS±HH:MM", "price": 312.50}, ...]
 
-    Kluczowy algorytm:
-      1. Posortuj etykiety TGE chronologicznie (H01 < H02 < H02A < H03 < ...)
-      2. Użyj pozycji ordinalnej (0, 1, 2, ...) jako liczby godzin od lokalnej północy
-      3. Przelicz przez UTC → automatyczna obsługa DST (spring-forward, fall-back)
+    Algorytm timestamp (poprawna obsługa DST):
+      1. Wyznacz lokalną północ dnia dostawy (00:00 czas Warsaw)
+      2. Przelicz na UTC
+      3. Dla każdego ordinal (0, 1, 2, ...): UTC + ordinal godzin → local Warsaw
 
-    Dlaczego przez UTC zamiast bezpośrednio local + timedelta?
-      datetime + timedelta w strefie czasowej przechodzi przez DST niepoprawnie.
-      Konwersja przez UTC zawsze daje właściwy offset i poprawny czas zegarowy.
-
-    Przykład fall-back (2026-10-25):
+    Przykład fall-back (2026-10-25, 25 godzin):
       ordinal 0 → 00:00+02:00 (H01, CEST)
-      ordinal 2 → 02:00+02:00 (H02A, CEST — przed cofnięciem zegarka)
-      ordinal 3 → 02:00+01:00 (H03, CET — po cofnięciu zegarka)
-    """
-    sorted_labels = sorted(hour_to_price.keys(), key=_sort_key)
+      ordinal 2 → 02:00+02:00 (H03a, CEST — przed cofnięciem zegarka)
+      ordinal 3 → 02:00+01:00 (H03b, CET — po cofnięciu zegarka)
+      ordinal 24 → 23:00+01:00 (H25, CET)
 
-    # Lokalna północ dnia dostawy → UTC
+    Przykład spring-forward (2026-03-29, 23 godziny):
+      ordinal 1 → 01:00+01:00 (CET)
+      ordinal 2 → 03:00+02:00 (CEST — przeskok przez 02:00)
+    """
     local_midnight = datetime(
         delivery_date.year, delivery_date.month, delivery_date.day,
         0, 0, 0,
@@ -291,35 +260,24 @@ def build_price_list(delivery_date: date, hour_to_price: dict[str, float]) -> li
     midnight_utc = local_midnight.astimezone(ZoneInfo("UTC"))
 
     result = []
-    for ordinal, label in enumerate(sorted_labels):
+    for ordinal, price in enumerate(prices):
         utc_dt = midnight_utc + timedelta(hours=ordinal)
         local_dt = utc_dt.astimezone(WARSAW_TZ)
         result.append({
             "time": _format_local_dt(local_dt),
-            "price": hour_to_price[label],
+            "price": price,
         })
 
     return result
 
 
-def _sort_key(label: str) -> tuple[int, int]:
-    """
-    Klucz sortowania etykiet TGE: H01 < H02 < H02A < H03 < ... < H24 < H25.
-    Cyfry rosnąco, sufiks literowy ("A") po numerze bazowym.
-    """
-    num = int(re.sub(r"[A-Za-z]", "", label))
-    has_suffix = 1 if re.search(r"[A-Za-z]", label) else 0
-    return (num, has_suffix)
-
-
 def _format_local_dt(dt: datetime) -> str:
     """Formatuje datetime jako 'YYYY-MM-DD HH:MM:SS±HH:MM'."""
     offset = dt.utcoffset()
-    total_seconds = int(offset.total_seconds())
-    sign = "+" if total_seconds >= 0 else "-"
-    total_seconds = abs(total_seconds)
-    offset_str = f"{sign}{total_seconds // 3600:02d}:{(total_seconds % 3600) // 60:02d}"
-    return dt.strftime("%Y-%m-%d %H:%M:%S") + offset_str
+    total_sec = int(offset.total_seconds())
+    sign = "+" if total_sec >= 0 else "-"
+    total_sec = abs(total_sec)
+    return dt.strftime("%Y-%m-%d %H:%M:%S") + f"{sign}{total_sec // 3600:02d}:{(total_sec % 3600) // 60:02d}"
 
 
 # ---------------------------------------------------------------------------
@@ -328,34 +286,31 @@ def _format_local_dt(dt: datetime) -> str:
 
 def validate_prices(prices: list[dict], delivery_date: date) -> None:
     """
-    Sprawdza poprawność pobranych danych.
-    Rzuca ValueError przy wykryciu problemu.
+    Sprawdza poprawność pobranych danych. Rzuca ValueError przy problemie.
     """
     n = len(prices)
     if n < MIN_HOURS or n > MAX_HOURS:
         raise ValueError(
-            f"Nieoczekiwana liczba godzin: {n} (oczekiwano {MIN_HOURS}–{MAX_HOURS}). "
-            "Możliwa zmiana struktury strony TGE lub problem z DST."
+            f"Nieoczekiwana liczba godzin: {n} (oczekiwano {MIN_HOURS}–{MAX_HOURS}).\n"
+            "  Sprawdź: zmiana czasu DST, lub błąd parsowania tabeli TGE."
         )
 
     date_str = delivery_date.strftime("%Y-%m-%d")
     for entry in prices:
         if not entry["time"].startswith(date_str):
             raise ValueError(
-                f"Błędna data w danych: '{entry['time']}'. "
-                f"Oczekiwano daty {date_str}."
+                f"Błędna data w danych: '{entry['time']}' (oczekiwano {date_str})."
             )
         p = entry["price"]
         if not (MIN_PRICE <= p <= MAX_PRICE):
             raise ValueError(
-                f"Cena poza dozwolonym zakresem: {p} PLN/MWh "
-                f"(limit: {MIN_PRICE}–{MAX_PRICE})."
+                f"Cena poza zakresem: {p} PLN/MWh (limit: {MIN_PRICE}–{MAX_PRICE})."
             )
 
     vals = [e["price"] for e in prices]
     print(
         f"Walidacja OK: {n} godzin | "
-        f"min={min(vals):.2f} max={max(vals):.2f} avg={sum(vals)/n:.2f} PLN/MWh",
+        f"min={min(vals):.2f}  max={max(vals):.2f}  avg={sum(vals)/n:.2f} PLN/MWh",
         file=sys.stderr,
     )
 
@@ -375,7 +330,7 @@ def save_prices(delivery_date: date, prices: list[dict]) -> None:
     price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
 
     if os.path.exists(price_file):
-        print(f"Plik {price_file} już istnieje — pomijam zapis.", file=sys.stderr)
+        print(f"Plik {price_file} już istnieje — pomijam.", file=sys.stderr)
         return
 
     scraped_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -388,7 +343,7 @@ def save_prices(delivery_date: date, prices: list[dict]) -> None:
 
     with open(price_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-    print(f"Zapisano: {price_file} ({len(prices)} godzin)", file=sys.stderr)
+    print(f"Zapisano: {price_file}  ({len(prices)} godzin)", file=sys.stderr)
 
     _update_index(date_str, scraped_at)
 
@@ -419,14 +374,14 @@ def _update_index(date_str: str, updated_at: str) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    # Obsługa zmiennej środowiskowej DELIVERY_DATE (do backfillingu i workflow_dispatch)
+    # Obsługa DELIVERY_DATE (backfill / workflow_dispatch)
     delivery_date_str = os.environ.get("DELIVERY_DATE", "").strip()
     if delivery_date_str:
         try:
             delivery_date = date.fromisoformat(delivery_date_str)
         except ValueError:
             print(
-                f"ERROR: Nieprawidłowy format DELIVERY_DATE='{delivery_date_str}'. "
+                f"ERROR: Nieprawidłowy DELIVERY_DATE='{delivery_date_str}'. "
                 "Oczekiwano YYYY-MM-DD.",
                 file=sys.stderr,
             )
@@ -435,50 +390,51 @@ def main() -> None:
         delivery_date = date.today() + timedelta(days=1)
 
     date_str = delivery_date.strftime("%Y-%m-%d")
-    print(f"=== Scraper TGE Fixing I | data dostawy: {date_str} ===", file=sys.stderr)
+    print(f"=== TGE Fixing I | data dostawy: {date_str} ===", file=sys.stderr)
 
-    # Sprawdź czy plik już istnieje
+    # Wyjdź bez błędu jeśli plik już istnieje
     price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
     if os.path.exists(price_file):
         print(f"Plik {price_file} już istnieje — nic do zrobienia.", file=sys.stderr)
         sys.exit(0)
 
+    # URL z parametrem dateShow = delivery_date - 1 dzień
+    # (TGE wyświetla ceny następnego dnia, dateShow to data z której przeglądamy)
+    query_date = delivery_date - timedelta(days=1)
+    url = f"{TGE_BASE_URL}?dateShow={query_date.strftime('%d-%m-%Y')}"
+
     # Krok 1: pobierz HTML
     try:
-        html = get_html_playwright(TGE_URL)
+        html = get_html_playwright(url)
     except Exception as e:
-        print(f"ERROR: Nie udało się pobrać strony TGE: {e}", file=sys.stderr)
+        print(f"ERROR: Nie udało się pobrać strony: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Krok 2: parsuj tabelę
-    hour_to_price = parse_html_table(html, delivery_date)
-
-    if not hour_to_price:
+    raw_prices = parse_html_table(html, delivery_date)
+    if not raw_prices:
         print(
-            f"\nERROR: Nie znaleziono cen dla daty {date_str}.\n"
+            f"\nERROR: Brak cen dla daty {date_str}.\n"
             "\nMożliwe przyczyny:\n"
-            "  1. TGE jeszcze nie opublikowało cen (za wcześnie — normalna publikacja o 10:30)\n"
-            "  2. Strona TGE zmieniła strukturę tabeli\n"
-            "  3. Scraper zablokowany przez TGE (bot detection)\n"
-            "  4. Błędna data — sprawdź czy delivery_date = jutro\n"
-            "\nZalecana akcja: uruchom workflow_dispatch ręcznie lub sprawdź stronę w przeglądarce.",
+            "  1. TGE nie opublikowało jeszcze cen (normalna publikacja o 10:30)\n"
+            "  2. Błędny parametr dateShow — sprawdź logikę delivery_date - 1 dzień\n"
+            "  3. Strona TGE zmieniła strukturę tabeli\n"
+            "  4. Strona zablokowała scraper (sprawdź debug_screenshot.png)\n"
+            f"\nURL próbowany: {url}",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    print(
-        f"Znaleziono {len(hour_to_price)} instrumentów: {sorted(hour_to_price.keys())}",
-        file=sys.stderr,
-    )
+    print(f"Znaleziono {len(raw_prices)} godzin.", file=sys.stderr)
 
-    # Krok 3: buduj listę z timestampami
-    prices = build_price_list(delivery_date, hour_to_price)
+    # Krok 3: buduj timestampy
+    prices = build_price_list(delivery_date, raw_prices)
 
     # Krok 4: waliduj
     try:
         validate_prices(prices, delivery_date)
     except ValueError as e:
-        print(f"ERROR walidacji danych: {e}", file=sys.stderr)
+        print(f"ERROR walidacji: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Krok 5: zapisz

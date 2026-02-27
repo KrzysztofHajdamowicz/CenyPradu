@@ -1,0 +1,49 @@
+{
+  "name": "CenyPradu",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+
+  // Instalacja zależności Python + Playwright po stworzeniu kontenera
+  "postCreateCommand": "pip install -r scripts/requirements.txt && playwright install --with-deps chromium",
+
+  // Port 8080: python -m http.server 8080 do podglądu frontendu
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Frontend (web/)",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Python
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        // Playwright — uruchamianie skryptów z UI
+        "ms-playwright.playwright",
+        // Frontend
+        "esbenp.prettier-vscode",
+        "ms-vscode.live-server",
+        // GitHub Actions
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true,
+        "editor.rulers": [100],
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "[html]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "livePreview.serverRoot": "/workspaces/CenyPradu"
+      }
+    }
+  }
+}
