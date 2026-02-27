@@ -6,9 +6,10 @@ URL strony: https://tge.pl/energia-elektryczna-rdn?dateShow=DD-MM-YYYY
             (dateShow = delivery_date - 1 dzień, format DD-MM-YYYY)
 
 Struktura HTML:
-  Tabela: #footable_kontrakty_godzinowe
-  Wiersze: <tr><td>0-1</td><td>cena_PLN_MWh</td><td>wolumen</td>...</tr>
-  Data:    .kontrakt-date (element zawierający "godzinowe")
+  Tabela: #rdn  (klasy: table table-hover table-rdb)
+  Wiersze godzinowe: td[0]="YYYY-MM-DD_H01", td[1]="60", td[2]=cena Fixing I PLN/MWh
+  Wiersze 15-min:    td[0]="YYYY-MM-DD_Q00:15", td[1]="15" — ignorujemy
+  Data:    .kontrakt-date > small  ("dla dostawy w dniu DD-MM-YYYY")
 
 Format wyjściowy (data/prices/YYYY-MM-DD.json):
   {
@@ -55,7 +56,7 @@ def get_html_playwright(url: str) -> str:
     Pobiera wyrenderowany HTML strony przy użyciu Playwright (headless Chromium).
 
     Strona https://tge.pl zwraca 403 dla zwykłych requestów HTTP — wymagana
-    pełna przeglądarka. Czeka na załadowanie tabeli #footable_kontrakty_godzinowe.
+    pełna przeglądarka. Czeka na załadowanie tabeli #rdn.
     """
     from playwright.sync_api import sync_playwright
 
@@ -75,15 +76,15 @@ def get_html_playwright(url: str) -> str:
         print(f"Ładowanie: {url}", file=sys.stderr)
         page.goto(url, wait_until="domcontentloaded", timeout=60_000)
 
-        # Czekaj na tabelę z godzinowymi cenami
+        # Czekaj na tabelę z cenami
         try:
-            page.wait_for_selector("#footable_kontrakty_godzinowe", timeout=30_000)
+            page.wait_for_selector("#rdn", timeout=30_000)
         except Exception:
             screenshot_path = "debug_screenshot.png"
             page.screenshot(path=screenshot_path)
             browser.close()
             raise RuntimeError(
-                "Tabela #footable_kontrakty_godzinowe nie załadowała się.\n"
+                "Tabela #rdn nie załadowała się.\n"
                 f"Zrzut ekranu: {screenshot_path}\n"
                 "Możliwe: strona TGE zmieniła strukturę lub jeszcze nie ma cen."
             )
@@ -104,16 +105,16 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
     Parsuje HTML strony TGE i zwraca listę cen Fixing I (PLN/MWh)
     w kolejności chronologicznej (H01, H02, ..., H24; 25 przy fall-back).
 
-    Struktura tabeli:
-      - Selektor: #footable_kontrakty_godzinowe > tbody > tr
-      - td[0]: zakres godzin, np. "0-1", "1-2", ..., "23-24"
-      - td[1]: cena Fixing I (PLN/MWh), format: "312,50" lub "1 234,56"
-      - td[2]: wolumen Fixing I (MWh) — ignorujemy
-      - td[3]: cena Fixing II (PLN/MWh) — ignorujemy
-      - td[4]: wolumen Fixing II (MWh) — ignorujemy
+    Struktura tabeli (#rdn):
+      - td[0]: identyfikator instrumentu, np. "2026-02-28_H01", "2026-02-28_Q00:15"
+      - td[1]: typ instrumentu: "60" = godzinowy, "15" = 15-minutowy
+      - td[2]: cena Fixing I (PLN/MWh), format: "312,50" lub "1 234,56" lub "-"
+      - td[3]: wolumen Fixing I (MWh) — ignorujemy
+      - ...
 
-    Na dzień fall-back zakres "2-3" pojawi się dwukrotnie (25 wierszy łącznie).
-    Kolejność wierszy w HTML jest chronologiczna, więc ordinal = pozycja = godzina.
+    Filtrujemy tylko wiersze godzinowe: identyfikator kończy się na _H\\d{2}.
+    Kolejność wierszy w HTML jest chronologiczna (H01 ... H24/H25).
+    Na dzień fall-back H03 pojawi się dwukrotnie (25 wierszy łącznie).
     """
     from bs4 import BeautifulSoup
 
@@ -123,10 +124,10 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
     _verify_page_date(soup, delivery_date)
 
     # Wyciągnij ciało tabeli
-    tbody = soup.select_one("#footable_kontrakty_godzinowe > tbody")
+    tbody = soup.select_one("#rdn > tbody")
     if tbody is None:
         print(
-            "ERROR: Nie znaleziono #footable_kontrakty_godzinowe > tbody.\n"
+            "ERROR: Nie znaleziono #rdn > tbody.\n"
             "Sprawdź czy strona TGE nie zmieniła struktury.",
             file=sys.stderr,
         )
@@ -135,26 +136,27 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
     prices: list[float] = []
     for row in tbody.select("tr"):
         tds = row.select("td")
-        if len(tds) < 2:
+        if len(tds) < 3:
             continue
 
-        hour_range = tds[0].get_text(strip=True)
+        instrument = tds[0].get_text(strip=True)
 
-        # Filtruj tylko wiersze z zakresami godzinowymi: "0-1" .. "23-24"
-        if not re.match(r"^\d{1,2}-\d{1,2}$", hour_range):
+        # Filtruj tylko wiersze godzinowe: np. "2026-02-28_H01", "2026-02-28_H24"
+        if not re.search(r"_H\d{2}$", instrument):
             continue
 
-        price_text = tds[1].get_text(strip=True)
+        price_text = tds[2].get_text(strip=True)  # td[3] (1-indexed) = Fixing I kurs
         price = _parse_price(price_text)
         if price is None:
             print(
-                f"WARN: nie można sparsować ceny '{price_text}' (zakres {hour_range})",
+                f"WARN: nie można sparsować ceny '{price_text}' ({instrument})",
                 file=sys.stderr,
             )
             continue
 
         prices.append(price)
-        print(f"  {hour_range:6s} → {price:.2f} PLN/MWh", file=sys.stderr)
+        hour_label = instrument.split("_")[-1]  # "H01", "H02", ...
+        print(f"  {hour_label} → {price:.2f} PLN/MWh", file=sys.stderr)
 
     return prices
 
@@ -164,16 +166,16 @@ def _verify_page_date(soup, delivery_date: date) -> None:
     Weryfikuje datę dostawy z elementu .kontrakt-date na stronie TGE.
     Loguje ostrzeżenie jeśli nie pasuje — nie rzuca wyjątku.
 
-    Element .kontrakt-date zawierający "godzinowe" ma format:
-      "Kontrakty godzinowe dla dostawy w dniu DD-MM-YYYY"
+    Element .kontrakt-date ma strukturę:
+      <h4 class="kontrakt-date">
+        <a>Kontrakty</a>
+        <small>dla dostawy w dniu DD-MM-YYYY</small>
+      </h4>
     """
     expected = delivery_date.strftime("%d-%m-%Y")
 
     for el in soup.select(".kontrakt-date"):
         text = el.get_text(strip=True)
-        if "godzinowe" not in text.lower():
-            continue
-
         found_dates = re.findall(r"\d{2}-\d{2}-\d{4}", text)
         if not found_dates:
             continue
@@ -190,7 +192,7 @@ def _verify_page_date(soup, delivery_date: date) -> None:
         return
 
     print(
-        "WARN: nie znaleziono .kontrakt-date z 'godzinowe' — pomijam weryfikację daty.",
+        "WARN: nie znaleziono .kontrakt-date — pomijam weryfikację daty.",
         file=sys.stderr,
     )
 
