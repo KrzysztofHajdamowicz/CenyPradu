@@ -1,0 +1,94 @@
+name: Scrape TGE Prices
+
+on:
+  schedule:
+    # 10:00 UTC = 11:00 CET (zima) = 12:00 CEST (lato)
+    # TGE publikuje Fixing I codziennie o 10:30 czasu polskiego
+    - cron: '0 10 * * *'
+
+  workflow_dispatch:
+    inputs:
+      delivery_date:
+        description: >
+          Data dostawy YYYY-MM-DD (domyślnie: jutro).
+          Przydatne do backfillingu brakujących dni.
+        required: false
+        type: string
+
+permissions:
+  contents: write   # Wymagane do git commit + push
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Pobierz pełną historię żeby git push działał poprawnie
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'scripts/requirements.txt'
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('scripts/requirements.txt') }}
+
+      - name: Install Playwright + Chromium
+        # Zawsze instaluj system deps; przeglądarka z cache jeśli dostępna
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            playwright install --with-deps chromium
+          else
+            playwright install-deps chromium
+          fi
+
+      - name: Scrape TGE prices
+        run: python scripts/scrape_tge.py
+        env:
+          PYTHONUNBUFFERED: "1"
+          # Pusta wartość = jutro; wypełniona przez workflow_dispatch = konkretna data
+          DELIVERY_DATE: ${{ inputs.delivery_date }}
+
+      - name: Commit and push new data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/prices/
+
+          if git diff --staged --quiet; then
+            echo "Brak nowych danych do zacommitowania (plik już istnieje lub nic nie zmieniono)."
+          else
+            # Wyznacz datę dostawy z pliku index.json
+            DELIVERY_DATE=$(python -c "
+          import json, os
+          idx = json.load(open('data/prices/index.json'))
+          print(idx.get('latest', 'unknown'))
+          ")
+            git commit -m "data: ceny TGE Fixing I dla ${DELIVERY_DATE}"
+            git push
+            echo "Dane opublikowane dla: ${DELIVERY_DATE}"
+          fi
+
+      - name: Upload debug screenshot on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshot-${{ github.run_id }}
+          path: debug_screenshot.png
+          if-no-files-found: ignore
+          retention-days: 7
