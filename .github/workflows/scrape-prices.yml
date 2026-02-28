@@ -25,13 +25,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # Pobierz pełną historię żeby git push działał poprawnie
           fetch-depth: 1
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -39,22 +39,6 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install -r scripts/requirements.txt
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('scripts/requirements.txt') }}
-
-      - name: Install Playwright + Chromium
-        # Zawsze instaluj system deps; przeglądarka z cache jeśli dostępna
-        run: |
-          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
-            playwright install --with-deps chromium
-          else
-            playwright install-deps chromium
-          fi
 
       - name: Scrape TGE prices
         run: python scripts/scrape_tge.py
