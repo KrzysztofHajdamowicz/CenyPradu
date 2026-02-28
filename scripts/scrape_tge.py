@@ -48,52 +48,40 @@ MAX_HOURS = 25
 
 
 # ---------------------------------------------------------------------------
-# Pobieranie HTML (Playwright + headless Chromium)
+# Pobieranie HTML (requests + BeautifulSoup4)
 # ---------------------------------------------------------------------------
 
-def get_html_playwright(url: str) -> str:
+def get_html_requests(url: str) -> str:
     """
-    Pobiera wyrenderowany HTML strony przy użyciu Playwright (headless Chromium).
+    Pobiera HTML strony przy użyciu requests z nagłówkami przeglądarki.
 
-    Strona https://tge.pl zwraca 403 dla zwykłych requestów HTTP — wymagana
-    pełna przeglądarka. Czeka na załadowanie tabeli #rdn.
+    Wysyła żądanie GET z User-Agent i nagłówkami Accept typowymi dla Chrome,
+    co pozwala ominąć podstawowe blokady po stronie TGE.
     """
-    from playwright.sync_api import sync_playwright
+    import requests
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/121.0.0.0 Safari/537.36"
-            ),
-            locale="pl-PL",
-            timezone_id="Europe/Warsaw",
-        )
-        page = context.new_page()
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/121.0.0.0 Safari/537.36"
+        ),
+        "Accept": (
+            "text/html,application/xhtml+xml,application/xml;q=0.9,"
+            "image/webp,*/*;q=0.8"
+        ),
+        "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+    }
 
-        print(f"Ładowanie: {url}", file=sys.stderr)
-        page.goto(url, wait_until="domcontentloaded", timeout=60_000)
-
-        # Czekaj na tabelę z cenami
-        try:
-            page.wait_for_selector("#rdn", timeout=30_000)
-        except Exception:
-            screenshot_path = "debug_screenshot.png"
-            page.screenshot(path=screenshot_path)
-            browser.close()
-            raise RuntimeError(
-                "Tabela #rdn nie załadowała się.\n"
-                f"Zrzut ekranu: {screenshot_path}\n"
-                "Możliwe: strona TGE zmieniła strukturę lub jeszcze nie ma cen."
-            )
-
-        html = page.content()
-        browser.close()
+    print(f"Ładowanie: {url}", file=sys.stderr)
+    response = requests.get(url, headers=headers, timeout=30)
+    response.raise_for_status()
 
     print("HTML pobrany.", file=sys.stderr)
-    return html
+    return response.text
 
 
 # ---------------------------------------------------------------------------
@@ -405,7 +393,7 @@ def main() -> None:
 
     # Krok 1: pobierz HTML
     try:
-        html = get_html_playwright(url)
+        html = get_html_requests(url)
     except Exception as e:
         print(f"ERROR: Nie udało się pobrać strony: {e}", file=sys.stderr)
         sys.exit(1)
