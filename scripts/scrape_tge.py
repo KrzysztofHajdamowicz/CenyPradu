@@ -24,9 +24,13 @@ Format wyjściowy (data/prices/YYYY-MM-DD.json):
 
 Uruchomienie:
   python scripts/scrape_tge.py                             # data dostawy = jutro
-  DELIVERY_DATE=2026-03-01 python scripts/scrape_tge.py   # konkretna data (backfill)
+  python scripts/scrape_tge.py 2026-03-01                  # konkretna data (backfill)
+  python scripts/scrape_tge.py --force                     # nadpisz istniejący plik
+  python scripts/scrape_tge.py --verify 2026-03-01         # porównaj z istniejącym JSON
+  DELIVERY_DATE=2026-03-01 python scripts/scrape_tge.py   # backfill (kompatybilność)
 """
 
+import argparse
 import json
 import os
 import re
@@ -307,17 +311,17 @@ def validate_prices(prices: list[dict], delivery_date: date) -> None:
 # Zapis do pliku
 # ---------------------------------------------------------------------------
 
-def save_prices(delivery_date: date, prices: list[dict]) -> None:
+def save_prices(delivery_date: date, prices: list[dict], *, force: bool = False) -> None:
     """
     Zapisuje ceny do data/prices/YYYY-MM-DD.json i aktualizuje index.json.
-    Nie nadpisuje istniejącego pliku.
+    Nie nadpisuje istniejącego pliku chyba że force=True.
     """
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     date_str = delivery_date.strftime("%Y-%m-%d")
     price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
 
-    if os.path.exists(price_file):
+    if os.path.exists(price_file) and not force:
         print(f"Plik {price_file} już istnieje — pomijam.", file=sys.stderr)
         return
 
@@ -358,47 +362,87 @@ def _update_index(date_str: str, updated_at: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Główna funkcja
+# Weryfikacja — porównanie świeżo pobranych danych z istniejącym JSON
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    # Obsługa DELIVERY_DATE (backfill / workflow_dispatch)
-    delivery_date_str = os.environ.get("DELIVERY_DATE", "").strip()
-    if delivery_date_str:
-        try:
-            delivery_date = date.fromisoformat(delivery_date_str)
-        except ValueError:
-            print(
-                f"ERROR: Nieprawidłowy DELIVERY_DATE='{delivery_date_str}'. "
-                "Oczekiwano YYYY-MM-DD.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-    else:
-        delivery_date = date.today() + timedelta(days=1)
-
+def verify_prices(delivery_date: date, fresh_prices: list[dict]) -> bool:
+    """
+    Porównuje świeżo pobrane ceny z zapisanym plikiem JSON.
+    Zwraca True jeśli dane się zgadzają, False jeśli są różnice.
+    """
     date_str = delivery_date.strftime("%Y-%m-%d")
-    print(f"=== TGE Fixing I | data dostawy: {date_str} ===", file=sys.stderr)
-
-    # Wyjdź bez błędu jeśli plik już istnieje
     price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
-    if os.path.exists(price_file):
-        print(f"Plik {price_file} już istnieje — nic do zrobienia.", file=sys.stderr)
-        sys.exit(0)
 
-    # URL z parametrem dateShow = delivery_date - 1 dzień
-    # (TGE wyświetla ceny następnego dnia, dateShow to data z której przeglądamy)
+    if not os.path.exists(price_file):
+        print(f"ERROR: Brak pliku {price_file} do weryfikacji.", file=sys.stderr)
+        return False
+
+    with open(price_file, "r", encoding="utf-8") as f:
+        saved = json.load(f)
+
+    saved_prices = saved.get("prices", [])
+    ok = True
+
+    if len(fresh_prices) != len(saved_prices):
+        print(
+            f"RÓŻNICA: liczba godzin: pobrane={len(fresh_prices)}, "
+            f"zapisane={len(saved_prices)}",
+            file=sys.stderr,
+        )
+        ok = False
+
+    n = min(len(fresh_prices), len(saved_prices))
+    diffs = 0
+    for i in range(n):
+        fp, sp = fresh_prices[i], saved_prices[i]
+        time_match = fp["time"] == sp["time"]
+        price_match = fp["price"] == sp["price"]
+
+        if not time_match or not price_match:
+            diffs += 1
+            parts = []
+            if not time_match:
+                parts.append(f"time: {sp['time']} → {fp['time']}")
+            if not price_match:
+                parts.append(f"price: {sp['price']} → {fp['price']}")
+            print(f"  [{i}] {', '.join(parts)}", file=sys.stderr)
+
+    if diffs:
+        print(f"RÓŻNICA: {diffs} godzin(y) z różnymi wartościami.", file=sys.stderr)
+        ok = False
+
+    if ok:
+        print(
+            f"VERIFY OK: {price_file} — {len(fresh_prices)} godzin, "
+            "dane zgodne ze źródłem.",
+            file=sys.stderr,
+        )
+    else:
+        print(f"VERIFY FAIL: {price_file} — wykryto różnice!", file=sys.stderr)
+
+    return ok
+
+
+# ---------------------------------------------------------------------------
+# Pobieranie i parsowanie — wspólny krok
+# ---------------------------------------------------------------------------
+
+def fetch_and_parse(delivery_date: date) -> list[dict]:
+    """
+    Pobiera HTML z TGE, parsuje tabelę, buduje timestampy i waliduje.
+    Zwraca gotową listę price entries lub wywołuje sys.exit(1) przy błędzie.
+    """
+    date_str = delivery_date.strftime("%Y-%m-%d")
+
     query_date = delivery_date - timedelta(days=1)
     url = f"{TGE_BASE_URL}?dateShow={query_date.strftime('%d-%m-%Y')}"
 
-    # Krok 1: pobierz HTML
     try:
         html = get_html_requests(url)
     except Exception as e:
         print(f"ERROR: Nie udało się pobrać strony: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Krok 2: parsuj tabelę
     raw_prices = parse_html_table(html, delivery_date)
     if not raw_prices:
         print(
@@ -415,18 +459,86 @@ def main() -> None:
 
     print(f"Znaleziono {len(raw_prices)} godzin.", file=sys.stderr)
 
-    # Krok 3: buduj timestampy
     prices = build_price_list(delivery_date, raw_prices)
 
-    # Krok 4: waliduj
     try:
         validate_prices(prices, delivery_date)
     except ValueError as e:
         print(f"ERROR walidacji: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Krok 5: zapisz
-    save_prices(delivery_date, prices)
+    return prices
+
+
+# ---------------------------------------------------------------------------
+# CLI i główna funkcja
+# ---------------------------------------------------------------------------
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Scraper cen energii TGE — Rynek Dnia Następnego, Fixing I.",
+    )
+    parser.add_argument(
+        "date",
+        nargs="?",
+        default=None,
+        help="Data dostawy YYYY-MM-DD (domyślnie: jutro).",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Nadpisz istniejący plik JSON zamiast go pomijać.",
+    )
+    parser.add_argument(
+        "--verify",
+        action="store_true",
+        help=(
+            "Pobierz dane ze strony TGE i porównaj z istniejącym plikiem JSON. "
+            "Nie modyfikuje pliku — służy do weryfikacji poprawności scrapera."
+        ),
+    )
+    return parser.parse_args(argv)
+
+
+def resolve_delivery_date(args: argparse.Namespace) -> date:
+    """Wyznacza datę dostawy z argumentu CLI, zmiennej środowiskowej lub domyślnie jutro."""
+    if args.date:
+        src = args.date
+    else:
+        src = os.environ.get("DELIVERY_DATE", "").strip()
+
+    if src:
+        try:
+            return date.fromisoformat(src)
+        except ValueError:
+            print(
+                f"ERROR: Nieprawidłowa data '{src}'. Oczekiwano YYYY-MM-DD.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+    return date.today() + timedelta(days=1)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    delivery_date = resolve_delivery_date(args)
+    date_str = delivery_date.strftime("%Y-%m-%d")
+
+    print(f"=== TGE Fixing I | data dostawy: {date_str} ===", file=sys.stderr)
+
+    if args.verify:
+        prices = fetch_and_parse(delivery_date)
+        ok = verify_prices(delivery_date, prices)
+        sys.exit(0 if ok else 1)
+
+    price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
+    if os.path.exists(price_file) and not args.force:
+        print(f"Plik {price_file} już istnieje — nic do zrobienia.", file=sys.stderr)
+        sys.exit(0)
+
+    prices = fetch_and_parse(delivery_date)
+    save_prices(delivery_date, prices, force=args.force)
     print("=== Gotowe ===", file=sys.stderr)
 
 

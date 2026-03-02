@@ -22,9 +22,13 @@ System automatycznie pobiera godzinowe ceny energii elektrycznej z TGE (Towarowa
 │    2026-03-01.json                                              │
 │    ...                                                          │
 │                                                                 │
-│  tariffs/                                                       │
+│  data/tariffs/                                                  │
+│    schema.json              ← JSON Schema walidacji             │
 │    tauron-g11.json                                              │
 │    tauron-g12.json                                              │
+│    tauron-g13.json          ← sezonowa (seasonal)               │
+│    tauron-g13s.json         ← sezonowa (seasonal)               │
+│    enea-g13active.json      ← sezonowa (monthly)                │
 │    energa-g11.json                                              │
 │    ...                                                          │
 │                                                                 │
@@ -41,7 +45,7 @@ System automatycznie pobiera godzinowe ceny energii elektrycznej z TGE (Towarowa
 │  https://<user>.github.io/CenyPradu/                           │
 │  ├── data/prices/index.json           ← "API" z listą dat       │
 │  ├── data/prices/2026-02-28.json      ← ceny dla dnia           │
-│  ├── tariffs/tauron-g11.json          ← taryfa dystrybucji      │
+│  ├── data/tariffs/tauron-g11.json     ← taryfa dystrybucji      │
 │  └── web/index.html                   ← frontend                │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -61,21 +65,28 @@ CenyPradu/
 │   └── requirements.txt            # Faza 1: zależności Pythona
 │
 ├── data/
-│   └── prices/
-│       ├── index.json              # Faza 1: indeks dostępnych dat
-│       └── YYYY-MM-DD.json         # Faza 1: ceny dla daty dostawy
-│
-├── tariffs/
-│   ├── schema.json                 # Faza 2: JSON Schema walidacji
-│   ├── tauron-g11.json             # Faza 2: taryfa Tauron G11
-│   ├── tauron-g12.json             # Faza 2: taryfa Tauron G12
-│   ├── energa-g11.json             # Faza 2: taryfa Energa G11
-│   ├── energa-g12.json             # Faza 2: taryfa Energa G12
-│   ├── enea-g11.json               # Faza 2: taryfa Enea G11
-│   ├── enea-g12.json               # Faza 2: taryfa Enea G12
-│   ├── pge-g11.json                # Faza 2: taryfa PGE G11
-│   ├── pge-g12.json                # Faza 2: taryfa PGE G12
-│   └── stoen-g11.json              # Faza 2: taryfa Stoen G11
+│   ├── prices/
+│   │   ├── index.json              # Faza 1: indeks dostępnych dat
+│   │   └── YYYY-MM-DD.json         # Faza 1: ceny dla daty dostawy
+│   └── tariffs/
+│       ├── schema.json             # Faza 2: JSON Schema walidacji
+│       ├── tauron-g11.json         # Faza 2: taryfa Tauron G11
+│       ├── tauron-g12.json         # Faza 2: taryfa Tauron G12
+│       ├── tauron-g12w.json        # Faza 2: taryfa Tauron G12w
+│       ├── tauron-g13.json         # Faza 2: taryfa Tauron G13 (sezonowa)
+│       ├── tauron-g13s.json        # Faza 2: taryfa Tauron G13s (sezonowa)
+│       ├── energa-g11.json         # Faza 2: taryfa Energa G11
+│       ├── energa-g12.json         # Faza 2: taryfa Energa G12
+│       ├── energa-g12w.json        # Faza 2: taryfa Energa G12w
+│       ├── enea-g11.json           # Faza 2: taryfa Enea G11
+│       ├── enea-g12.json           # Faza 2: taryfa Enea G12
+│       ├── enea-g12w.json          # Faza 2: taryfa Enea G12w
+│       ├── enea-g13active.json     # Faza 2: taryfa Enea G13active (sezonowa, miesięczna)
+│       ├── pge-g11.json            # Faza 2: taryfa PGE G11
+│       ├── pge-g12.json            # Faza 2: taryfa PGE G12
+│       ├── pge-g12w.json           # Faza 2: taryfa PGE G12w
+│       ├── stoen-g11.json          # Faza 2: taryfa Stoen G11
+│       └── stoen-g12.json          # Faza 2: taryfa Stoen G12
 │
 ├── web/
 │   ├── index.html                  # Faza 3: główna strona

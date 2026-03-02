@@ -14,11 +14,11 @@ TGE publ. 10:30 → GitHub Action 11:00 → scraper → JSON w repo → GitHub P
 
 ## Architektura projektu (fazy)
 
-| Faza | Opis | Status |
-|------|------|--------|
-| **1** | Scraper TGE + GitHub Actions + GitHub Pages API | Zaplanowane |
-| **2** | Katalog taryf dystrybucyjnych (JSON) | Zaplanowane |
-| **3** | Frontend: wykresy, historia, kalkulator | Zaplanowane |
+| Faza  | Opis                                            | Status      |
+| ----- | ----------------------------------------------- | ----------- |
+| **1** | Scraper TGE + GitHub Actions + GitHub Pages API | Gotowe      |
+| **2** | Katalog taryf dystrybucyjnych (JSON)            | Zaplanowane |
+| **3** | Frontend: wykresy, historia, kalkulator         | Zaplanowane |
 
 ## Dokumentacja
 
@@ -30,14 +30,40 @@ TGE publ. 10:30 → GitHub Action 11:00 → scraper → JSON w repo → GitHub P
 ## Dane
 
 Ceny godzinowe Fixing I z RDN (Rynek Dnia Następnego) dostępne pod:
+
 ```
 https://<user>.github.io/CenyPradu/data/prices/YYYY-MM-DD.json
 https://<user>.github.io/CenyPradu/data/prices/index.json
 ```
 
+## Scraper — użycie lokalne
+
+```bash
+# Domyślnie pobiera ceny na jutro
+python scripts/scrape_tge.py
+
+# Backfill — konkretna data dostawy
+python scripts/scrape_tge.py 2026-03-01
+
+# Nadpisz istniejący plik JSON
+python scripts/scrape_tge.py --force 2026-03-01
+
+# Weryfikacja — porównaj świeże dane ze strony TGE z zapisanym plikiem
+python scripts/scrape_tge.py --verify 2026-03-01
+```
+
+| Parametr    | Opis                                                                 |
+| ----------- | -------------------------------------------------------------------- |
+| `date`      | Opcjonalna data dostawy `YYYY-MM-DD` (domyślnie: jutro)             |
+| `--force`   | Nadpisuje istniejący plik JSON zamiast go pomijać                    |
+| `--verify`  | Pobiera dane i porównuje z zapisanym JSON (nie modyfikuje pliku)     |
+
+Zmienna środowiskowa `DELIVERY_DATE` jest nadal obsługiwana (używana w GitHub Actions).
+
 ## Źródło danych
 
 **Towarowa Giełda Energii S.A.**
+
 - Strona: https://wyniki.tge.pl/pl/wyniki/rdn/fixing-I/
 - Dane: ceny godzinowe Fixing I (PLN/MWh), publikowane codziennie ok. 10:30
 - Scraping: wymagany (brak publicznego API)

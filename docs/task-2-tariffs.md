@@ -34,34 +34,69 @@ Inne:
 
 ## OSD do pokrycia (priorytet)
 
-| OSD | Region | Taryfy |
-|-----|--------|--------|
-| **Tauron Dystrybucja S.A.** | Śląsk, Małopolska, Dolny Śląsk, Opolskie, Podkarpacie | G11, G12, G12w |
-| **Energa-Operator S.A.** | Pomorze, Warmia-Mazury, Kujawsko-Pomorskie, part Mazowsza | G11, G12, G12w |
-| **Enea Operator Sp. z o.o.** | Wielkopolska, Kujawy, Lubuskie, Zachodniopomorskie | G11, G12, G12w |
-| **PGE Dystrybucja S.A.** | Mazowsze, Łódź, Lublin, Podkarpacie, Rzeszów | G11, G12, G12w |
-| **Stoen Operator Sp. z o.o.** | Warszawa (obszar miejski) | G11, G12 |
+| OSD                           | Region                                                    | Taryfy         |
+| ----------------------------- | --------------------------------------------------------- | -------------- |
+| **Tauron Dystrybucja S.A.**   | Śląsk, Małopolska, Dolny Śląsk, Opolskie, Podkarpacie     | G11, G12, G12w |
+| **Energa-Operator S.A.**      | Pomorze, Warmia-Mazury, Kujawsko-Pomorskie, part Mazowsza | G11, G12, G12w |
+| **Enea Operator Sp. z o.o.**  | Wielkopolska, Kujawy, Lubuskie, Zachodniopomorskie        | G11, G12, G12w |
+| **PGE Dystrybucja S.A.**      | Mazowsze, Łódź, Lublin, Podkarpacie, Rzeszów              | G11, G12, G12w |
+| **Stoen Operator Sp. z o.o.** | Warszawa (obszar miejski)                                 | G11, G12       |
 
 ---
 
 ## Grupy taryfowe
 
 ### G11 — Taryfa jednoprzedziałowa (flat rate)
+
 - Ta sama stawka przez całą dobę, wszystkie dni tygodnia
 - Prosta, bez stref czasowych
 
 ### G12 — Taryfa dwuprzedziałowa (day/night)
+
 Dwie strefy:
+
 - **Dzienna:** zazwyczaj 06:00–21:00 (pon–sob) lub 06:00–13:00 + 15:00–22:00
 - **Nocna:** reszta doby + niedziele/święta
 
 Dokładne godziny różnią się między OSD — weryfikuj w obowiązującej taryfie.
 
 ### G12w — Taryfa trzyprzedziałowa (peak/shoulder/night)
+
 Trzy strefy. Przykład (do weryfikacji):
+
 - **Szczyt:** 07:00–13:00 i 15:00–21:00 (dni robocze)
 - **Poza szczytem (off-peak):** 13:00–15:00 i 21:00–22:00 (dni robocze)
 - **Noc:** 22:00–07:00 + weekendy + święta
+
+### G13 — Taryfa trójstrefowa sezonowa (Tauron)
+
+Trzy strefy z różnym harmonogramem w zależności od sezonu (lato/zima). Stawki identyczne w obu sezonach:
+
+- **Szczyt przedpołudniowy:** 07:00–13:00 (cały rok)
+- **Szczyt popołudniowy:** 19:00–22:00 (lato) / 16:00–21:00 (zima)
+- **Pozostałe godziny doby:** reszta + weekendy/święta = cała doba
+
+Lato: kwiecień–wrzesień, zima: październik–marzec.
+
+### G13s — Taryfa trójstrefowa sezonowa z różnicowaniem stawek (Tauron)
+
+Trzy strefy z harmonogramem i stawkami zmiennymi wg sezonu ORAZ typu dnia (roboczy / wolny):
+
+- **Dzienna szczytowa:** różne godziny lato/zima, różne stawki roboczy/wolny
+- **Dzienna pozaszczytowa:** analogicznie
+- **Nocna:** 21:00–07:00, stała stawka niezależnie od sezonu/dnia
+
+Dostępna wyłącznie u Tauron Dystrybucja.
+
+### G13active — Taryfa trójstrefowa miesięczna (Enea)
+
+Trzy strefy ze zmiennym harmonogramem co miesiąc, powiązane z profilem produkcji OZE:
+
+- **Strefa zalecanego poboru:** najtańsza (zachęta do zużycia w godzinach nadwyżki OZE)
+- **Strefa zalecanego ograniczania:** najdroższa (szczyty obciążenia sieci)
+- **Pozostałe godziny doby:** stawka standardowa
+
+Stawki jednakowe cały rok — zmienia się tylko harmonogram stref. Dostępna u Enea Operator.
 
 ---
 
@@ -88,18 +123,18 @@ Trzy strefy. Przykład (do weryfikacji):
 
   "fixed_charges_monthly": {
     "subscription_pln": 10.32,
-    "power_demand_pln_per_kw": 0.00
+    "power_demand_pln_per_kw": 0.0
   },
 
   "system_charges_pln_kwh": {
     "oze": 0.0001,
-    "capacity": 0.0150,
+    "capacity": 0.015,
     "quality": 0.0016,
     "transition": 0.0001,
-    "cogeneration": 0.0000
+    "cogeneration": 0.0
   },
 
-  "excise_pln_kwh": 0.0050,
+  "excise_pln_kwh": 0.005,
 
   "vat_rate": 0.23
 }
@@ -149,22 +184,63 @@ Trzy strefy. Przykład (do weryfikacji):
 
   "fixed_charges_monthly": {
     "subscription_pln": 10.32,
-    "power_demand_pln_per_kw": 0.00
+    "power_demand_pln_per_kw": 0.0
   },
 
   "system_charges_pln_kwh": {
     "oze": 0.0001,
-    "capacity": 0.0150,
+    "capacity": 0.015,
     "quality": 0.0016,
     "transition": 0.0001,
-    "cogeneration": 0.0000
+    "cogeneration": 0.0
   },
 
-  "excise_pln_kwh": 0.0050,
+  "excise_pln_kwh": 0.005,
 
   "vat_rate": 0.23
 }
 ```
+
+### Schemat dla G13 / G13s / G13active (taryfa sezonowa)
+
+Taryfy sezonowe używają pola `seasonal: true` i tablicy `seasons` zamiast `periods`:
+
+```json
+{
+  "variable_rates_pln_kwh": {
+    "type": "tou",
+    "seasonal": true,
+    "seasons": [
+      {
+        "name": "summer",
+        "label": "Lato (kwiecień–wrzesień)",
+        "months": [4, 5, 6, 7, 8, 9],
+        "periods": [
+          {
+            "name": "morning_peak",
+            "label": "Szczyt przedpołudniowy",
+            "rate": 0.2203,
+            "schedule": {
+              "weekday": ["07:00-13:00"],
+              "saturday": [],
+              "sunday": [],
+              "holiday": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "winter",
+        "label": "Zima (październik–marzec)",
+        "months": [1, 2, 3, 10, 11, 12],
+        "periods": []
+      }
+    ]
+  }
+}
+```
+
+Kalkulator wymaga dodatkowego parametru `month` (1–12) dla taryf sezonowych.
 
 ### Konwencja `schedule`
 
@@ -178,7 +254,9 @@ Trzy strefy. Przykład (do weryfikacji):
 
 ## Logika kalkulatora (JavaScript)
 
-Funkcja `calculateHourlyCostNetto(spotPricePLNperMWh, wallHour, dayOfWeek, tariff)` zwraca całkowity koszt w PLN/kWh.
+Funkcja `calculateHourlyCostNetto(spotPricePLNperMWh, wallHour, dayOfWeek, tariff, month?)` zwraca całkowity koszt w PLN/kWh.
+
+Parametr `month` (1–12) jest wymagany dla taryf sezonowych (`seasonal: true`). Dla taryf G11/G12/G12w jest opcjonalny.
 
 **Konwencja parametru `wallHour`:** liczba całkowita 0–23 (0 = godzina 00:00–01:00).
 Pochodzi bezpośrednio z `new Date(priceEntry.time.replace(" ", "T")).getHours()`.
@@ -191,20 +269,34 @@ Pochodzi bezpośrednio z `new Date(priceEntry.time.replace(" ", "T")).getHours()
  * @param {object} tariff - obiekt taryfy wczytany z JSON
  * @returns {number} koszt całkowity w PLN/kWh (netto bez VAT)
  */
-export function calculateHourlyCostNetto(spotPricePLNperMWh, wallHour, dayOfWeek, tariff) {
+export function calculateHourlyCostNetto(
+  spotPricePLNperMWh,
+  wallHour,
+  dayOfWeek,
+  tariff,
+) {
   const spotPLNkWh = spotPricePLNperMWh / 1000;
 
   const distributionRate = getDistributionRate(wallHour, dayOfWeek, tariff);
 
-  const systemCharges = Object.values(tariff.system_charges_pln_kwh)
-    .reduce((sum, v) => sum + v, 0);
+  const systemCharges = Object.values(tariff.system_charges_pln_kwh).reduce(
+    (sum, v) => sum + v,
+    0,
+  );
 
   return spotPLNkWh + distributionRate + systemCharges + tariff.excise_pln_kwh;
 }
 
-export function calculateHourlyCostBrutto(spotPricePLNperMWh, wallHour, dayOfWeek, tariff) {
-  return calculateHourlyCostNetto(spotPricePLNperMWh, wallHour, dayOfWeek, tariff)
-    * (1 + tariff.vat_rate);
+export function calculateHourlyCostBrutto(
+  spotPricePLNperMWh,
+  wallHour,
+  dayOfWeek,
+  tariff,
+) {
+  return (
+    calculateHourlyCostNetto(spotPricePLNperMWh, wallHour, dayOfWeek, tariff) *
+    (1 + tariff.vat_rate)
+  );
 }
 
 /**
@@ -220,7 +312,9 @@ function getDistributionRate(wallHour, dayOfWeek, tariff) {
 
   if (rates.type === "tou") {
     for (const period of rates.periods) {
-      const scheduleKey = ["weekday", "saturday", "sunday", "holiday"].includes(dayOfWeek)
+      const scheduleKey = ["weekday", "saturday", "sunday", "holiday"].includes(
+        dayOfWeek,
+      )
         ? dayOfWeek
         : "weekday";
       const schedule = period.schedule[scheduleKey] ?? [];
@@ -244,8 +338,8 @@ function getDistributionRate(wallHour, dayOfWeek, tariff) {
 function isInSchedule(wallHour, schedule) {
   for (const range of schedule) {
     const [startStr, endStr] = range.split("-");
-    const start = parseInt(startStr.split(":")[0]);  // "06:00" → 6
-    const end = parseInt(endStr.split(":")[0]);      // "21:00" → 21
+    const start = parseInt(startStr.split(":")[0]); // "06:00" → 6
+    const end = parseInt(endStr.split(":")[0]); // "21:00" → 21
 
     if (start < end) {
       // Normalny przedział: np. 06:00-21:00 → godz 6,7,...,20
@@ -268,13 +362,13 @@ function isInSchedule(wallHour, schedule) {
 
 Taryfy OSD zatwierdza URE (Urząd Regulacji Energetyki) i OSD publikują je na swoich stronach:
 
-| OSD | URL do taryf |
-|-----|-------------|
-| Tauron | https://www.tauron-dystrybucja.pl/taryfy |
+| OSD    | URL do taryf                                  |
+| ------ | --------------------------------------------- |
+| Tauron | https://www.tauron-dystrybucja.pl/taryfy      |
 | Energa | https://energa-operator.pl/dla-klienta/taryfy |
-| Enea | https://operator.enea.pl/dla-domu/taryfy |
-| PGE | https://pgedystrybucja.pl/dla-domu/taryfy |
-| Stoen | https://www.stoen.pl/regulacje/taryfy |
+| Enea   | https://operator.enea.pl/dla-domu/taryfy      |
+| PGE    | https://pgedystrybucja.pl/dla-domu/taryfy     |
+| Stoen  | https://www.stoen.pl/regulacje/taryfy         |
 
 Taryfy obowiązują od 1 stycznia danego roku lub od daty zatwierdzenia przez URE.
 
@@ -285,17 +379,20 @@ Taryfy obowiązują od 1 stycznia danego roku lub od daty zatwierdzenia przez UR
 ## Pliki do stworzenia
 
 ```
-tariffs/
-  schema.json           ← JSON Schema do walidacji plików taryfowych
+data/tariffs/
+  schema.json              ← JSON Schema do walidacji plików taryfowych
   tauron-g11.json
   tauron-g12.json
   tauron-g12w.json
+  tauron-g13.json          ← sezonowa (summer/winter)
+  tauron-g13s.json         ← sezonowa (summer/winter + dzień roboczy/wolny)
   energa-g11.json
   energa-g12.json
   energa-g12w.json
   enea-g11.json
   enea-g12.json
   enea-g12w.json
+  enea-g13active.json      ← sezonowa (harmonogram miesięczny)
   pge-g11.json
   pge-g12.json
   pge-g12w.json
@@ -303,9 +400,14 @@ tariffs/
   stoen-g12.json
 ```
 
+**Uwaga:** Grupy G13 nie są dostępne u wszystkich OSD. Energa-Operator, PGE Dystrybucja
+i Stoen Operator nie oferują taryfy G13 w 2026 r. (posiadają inne warianty: G12r, G12e, G12eko).
+Enea Operator oferuje G13active (trójstrefową z miesięcznym harmonogramem opartym o profil OZE).
+
 ### `tariffs/schema.json` — JSON Schema
 
 Stwórz JSON Schema (Draft 2020-12) walidujący strukturę pliku taryfy. Schemat powinien:
+
 - Wymagać pól: `id`, `name`, `dso`, `tariff_group`, `valid_from`, `currency`, `variable_rates_pln_kwh`, `vat_rate`
 - Walidować, że `vat_rate` jest liczbą między 0 a 1
 - Walidować, że wszystkie stawki w PLN/kWh są nieujemnymi liczbami
@@ -335,10 +437,10 @@ const FIXED_HOLIDAYS = [
 function getMovableHolidays(year) {
   const easter = calculateEasterDate(year);
   return [
-    easter,                          // Wielkanoc
-    addDays(easter, 1),              // Poniedziałek Wielkanocny
-    addDays(easter, 49),             // Zielone Świątki (Niedziela Zesłania)
-    addDays(easter, 60),             // Boże Ciało
+    easter, // Wielkanoc
+    addDays(easter, 1), // Poniedziałek Wielkanocny
+    addDays(easter, 49), // Zielone Świątki (Niedziela Zesłania)
+    addDays(easter, 60), // Boże Ciało
   ];
 }
 ```
@@ -347,8 +449,8 @@ function getMovableHolidays(year) {
 
 ## Definition of Done
 
-- [ ] Pliki JSON dla wszystkich 14 taryf (5 OSD × G11/G12/G12w, minus Stoen bez G12w)
-- [ ] `tariffs/schema.json` waliduje poprawne pliki i odrzuca błędne
+- [x] Pliki JSON: 14 taryf bazowych (G11/G12/G12w) + Tauron G13 + Tauron G13s + Enea G13active = 17 taryf
+- [x] `data/tariffs/schema.json` waliduje poprawne pliki i odrzuca błędne (z obsługą sezonowych)
 - [ ] Wszystkie wartości liczbowe zweryfikowane z aktualnymi taryfami URE
 - [ ] Każdy plik zawiera `source_url` wskazujący na oficjalny dokument taryfy
 - [ ] Logika kalkulatora (`web/js/tariffs.js`) poprawnie oblicza koszt dla G11 i G12

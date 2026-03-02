@@ -1,0 +1,71 @@
+---
+description: Mapa projektu CenyPradu — architektura, stan kodu, konwencje
+alwaysApply: true
+---
+
+# CenyPradu — kontekst projektu
+
+## Co to jest
+
+Automatyczne pobieranie godzinowych cen energii z TGE (Fixing I, RDN) + katalog taryf dystrybucyjnych OSD + frontend z wykresami i kalkulatorem kosztów. Hosting: GitHub Pages (statyczne JSON + vanilla JS).
+
+## Stan realizacji
+
+| Faza | Opis | Status |
+|------|------|--------|
+| 1 | Scraper TGE + GitHub Actions | Gotowe |
+| 2 | Taryfy dystrybucyjne (17 JSON) + kalkulator JS | Gotowe |
+| 3 | Frontend: index.html, wykresy Chart.js, widoki | Nie zaczęte |
+
+## Struktura katalogów
+
+```
+scripts/scrape_tge.py          # Scraper: requests + BeautifulSoup + lxml
+scripts/requirements.txt       # Zależności Python
+.github/workflows/scrape-prices.yml  # Cron 10:00 UTC + workflow_dispatch
+data/prices/YYYY-MM-DD.json    # Ceny godzinowe (61 plików, 2026-01–03)
+data/prices/index.json         # Indeks dat
+data/tariffs/*.json             # 17 taryf + schema.json
+web/js/tariffs.js               # Kalkulator kosztów (flat/tou/seasonal)
+web/js/holidays.js              # Polskie święta (stałe + ruchome)
+docs/                           # Specyfikacje projektowe (fazy 1-3)
+```
+
+## Scraper (scripts/scrape_tge.py)
+
+- Źródło: `https://tge.pl/energia-elektryczna-rdn?dateShow=DD-MM-YYYY`
+- dateShow = delivery_date − 1 dzień (TGE pokazuje ceny następnego dnia)
+- Tabela: `#rdn > tbody`, wiersze `_H01`–`_H24` (60-min), pomijamy `_Q` (15-min)
+- Cena: td[2] = Fixing I kurs, format polski (`312,50` / `1 234,56`)
+- Timestampy: Europe/Warsaw z UTC offset (poprawna obsługa DST 23/24/25h)
+- CLI: `scrape_tge.py [YYYY-MM-DD] [--force] [--verify]`
+- Env: `DELIVERY_DATE` (kompatybilność z GitHub Actions)
+
+## Format danych
+
+```json
+// data/prices/YYYY-MM-DD.json
+{"date": "2026-03-02", "scraped_at": "...", "unit": "PLN/MWh",
+ "prices": [{"time": "2026-03-02 00:00:00+01:00", "price": 364.6}, ...]}
+
+// data/tariffs/operator-grupa.json
+{"id": "tauron-g12-2025", "tariff_group": "G12", "dso": "Tauron Dystrybucja S.A.",
+ "variable_rates_pln_kwh": {"type": "tou", "periods": [...]}, ...}
+```
+
+## Konwencje
+
+- Język komentarzy/logów/UI: **polski**
+- Python: snake_case, type hints, docstringi po polsku, logi na stderr
+- JS: camelCase, ES2022 modules, vanilla (bez frameworków/bundlerów)
+- Pliki: snake_case (Python), kebab-case (taryfy: `tauron-g11.json`)
+- Typy dni: `weekday`, `saturday`, `sunday`, `holiday`
+- Harmonogram stref: `"HH:MM-HH:MM"` (czas lokalny PL)
+- Brak npm/webpack/React — frontend serwowany bezpośrednio z GitHub Pages
+
+## Kluczowe decyzje
+
+- requests zamiast Playwright (TGE nie wymaga JS rendering)
+- Statyczne JSON w repo zamiast bazy danych
+- GitHub Actions cron + Pages = zero kosztów utrzymania
+- Taryfy sezonowe: `seasonal: true` + `seasons[].months` + `seasons[].periods`
