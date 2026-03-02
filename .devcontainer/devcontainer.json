@@ -3,7 +3,7 @@
   "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
 
   // Instalacja zależności Python + Playwright po stworzeniu kontenera
-  "postCreateCommand": "pip install -r scripts/requirements.txt && playwright install --with-deps chromium",
+  "postCreateCommand": "pip install -r scripts/requirements.txt",
 
   // Port 8080: python -m http.server 8080 do podglądu frontendu
   "forwardPorts": [8080],
@@ -21,8 +21,6 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "charliermarsh.ruff",
-        // Playwright — uruchamianie skryptów z UI
-        "ms-playwright.playwright",
         // Frontend
         "esbenp.prettier-vscode",
         "ms-vscode.live-server",
