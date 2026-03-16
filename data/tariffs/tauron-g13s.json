@@ -1,0 +1,168 @@
+{
+  "id": "tauron-g13s-2026",
+  "name": "Tauron Dystrybucja — Taryfa G13s",
+  "dso": "TAURON Dystrybucja S.A.",
+  "tariff_group": "G13s",
+  "valid_from": "2026-01-01",
+  "valid_to": null,
+  "version": "2026",
+  "currency": "PLN",
+  "source_url": "https://www.tauron-dystrybucja.pl/taryfy",
+  "notes": "Taryfa zatwierdzona decyzją Prezesa URE nr DRE.WRE.4211.54.8.2025.ASa1. Taryfa trójstrefowa z sezonowymi strefami i zróżnicowanymi stawkami wg pory roku i typu dnia. Lato: kwiecień–wrzesień, zima: październik–marzec. Stawka nocna jest stała (0,1094) niezależnie od sezonu i typu dnia. Stawki dzienne różnią się między dniami roboczymi a dniami wolnymi (soboty, niedziele, święta). Strefy dzienne obejmują weekday-only; na weekendach/świętach stawki dzienne (szczytowa/pozaszczytowa) mają odrębne wartości modelowane jako osobne okresy w harmonogramie.",
+
+  "variable_rates_pln_kwh": {
+    "type": "tou",
+    "seasonal": true,
+    "seasons": [
+      {
+        "name": "summer",
+        "label": "Lato (kwiecień–wrzesień)",
+        "months": [4, 5, 6, 7, 8, 9],
+        "periods": [
+          {
+            "name": "day_peak_wd",
+            "label": "Dzienna szczytowa (dni robocze)",
+            "rate": 0.2842,
+            "schedule": {
+              "weekday":  ["07:00-09:00", "17:00-21:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "day_offpeak_wd",
+            "label": "Dzienna pozaszczytowa (dni robocze)",
+            "rate": 0.1000,
+            "schedule": {
+              "weekday":  ["09:00-17:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "day_peak_we",
+            "label": "Dzienna szczytowa (dni wolne)",
+            "rate": 0.1176,
+            "schedule": {
+              "weekday":  [],
+              "saturday": ["07:00-09:00", "17:00-21:00"],
+              "sunday":   ["07:00-09:00", "17:00-21:00"],
+              "holiday":  ["07:00-09:00", "17:00-21:00"]
+            }
+          },
+          {
+            "name": "day_offpeak_we",
+            "label": "Dzienna pozaszczytowa (dni wolne)",
+            "rate": 0.0400,
+            "schedule": {
+              "weekday":  [],
+              "saturday": ["09:00-17:00"],
+              "sunday":   ["09:00-17:00"],
+              "holiday":  ["09:00-17:00"]
+            }
+          },
+          {
+            "name": "night",
+            "label": "Nocna",
+            "rate": 0.1094,
+            "schedule": {
+              "weekday":  ["00:00-07:00", "21:00-24:00"],
+              "saturday": ["00:00-07:00", "21:00-24:00"],
+              "sunday":   ["00:00-07:00", "21:00-24:00"],
+              "holiday":  ["00:00-07:00", "21:00-24:00"]
+            }
+          }
+        ]
+      },
+      {
+        "name": "winter",
+        "label": "Zima (październik–marzec)",
+        "months": [1, 2, 3, 10, 11, 12],
+        "periods": [
+          {
+            "name": "day_peak_wd",
+            "label": "Dzienna szczytowa (dni robocze)",
+            "rate": 0.3332,
+            "schedule": {
+              "weekday":  ["07:00-10:00", "15:00-21:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "day_offpeak_wd",
+            "label": "Dzienna pozaszczytowa (dni robocze)",
+            "rate": 0.1999,
+            "schedule": {
+              "weekday":  ["10:00-15:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "day_peak_we",
+            "label": "Dzienna szczytowa (dni wolne)",
+            "rate": 0.1960,
+            "schedule": {
+              "weekday":  [],
+              "saturday": ["07:00-10:00", "15:00-21:00"],
+              "sunday":   ["07:00-10:00", "15:00-21:00"],
+              "holiday":  ["07:00-10:00", "15:00-21:00"]
+            }
+          },
+          {
+            "name": "day_offpeak_we",
+            "label": "Dzienna pozaszczytowa (dni wolne)",
+            "rate": 0.1200,
+            "schedule": {
+              "weekday":  [],
+              "saturday": ["10:00-15:00"],
+              "sunday":   ["10:00-15:00"],
+              "holiday":  ["10:00-15:00"]
+            }
+          },
+          {
+            "name": "night",
+            "label": "Nocna",
+            "rate": 0.1094,
+            "schedule": {
+              "weekday":  ["00:00-07:00", "21:00-24:00"],
+              "saturday": ["00:00-07:00", "21:00-24:00"],
+              "sunday":   ["00:00-07:00", "21:00-24:00"],
+              "holiday":  ["00:00-07:00", "21:00-24:00"]
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "fixed_charges_monthly": {
+    "subscription_pln": 4.56,
+    "network_pln_1phase": 7.38,
+    "network_pln_3phase": 10.86,
+    "power_demand_pln_per_kw": 0.0
+  },
+
+  "capacity_monthly_pln": {
+    "below_500kwh": 4.29,
+    "500_to_1200kwh": 10.31,
+    "1200_to_2800kwh": 17.18,
+    "above_2800kwh": 24.05
+  },
+
+  "system_charges_pln_kwh": {
+    "oze": 0.0073,
+    "capacity": 0.0,
+    "quality": 0.0331,
+    "transition": 0.0,
+    "cogeneration": 0.003
+  },
+
+  "excise_pln_kwh": 0.005,
+  "vat_rate": 0.23
+}

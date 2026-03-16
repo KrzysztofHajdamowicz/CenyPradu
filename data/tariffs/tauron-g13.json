@@ -1,0 +1,124 @@
+{
+  "id": "tauron-g13-2026",
+  "name": "Tauron Dystrybucja — Taryfa G13",
+  "dso": "TAURON Dystrybucja S.A.",
+  "tariff_group": "G13",
+  "valid_from": "2026-01-01",
+  "valid_to": null,
+  "version": "2026",
+  "currency": "PLN",
+  "source_url": "https://www.tauron-dystrybucja.pl/taryfy",
+  "notes": "Taryfa zatwierdzona decyzją Prezesa URE nr DRE.WRE.4211.54.8.2025.ASa1 z dnia 17.12.2025 r. Taryfa trójstrefowa z sezonowymi strefami czasowymi. Lato: kwiecień–wrzesień, zima: październik–marzec. Weekendy i święta = cała doba w strefie Pozostałe (najtaniej). Stawki identyczne w obu sezonach, różnią się godziny stref.",
+
+  "variable_rates_pln_kwh": {
+    "type": "tou",
+    "seasonal": true,
+    "seasons": [
+      {
+        "name": "summer",
+        "label": "Lato (kwiecień–wrzesień)",
+        "months": [4, 5, 6, 7, 8, 9],
+        "periods": [
+          {
+            "name": "morning_peak",
+            "label": "Szczyt przedpołudniowy",
+            "rate": 0.2203,
+            "schedule": {
+              "weekday":  ["07:00-13:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "afternoon_peak",
+            "label": "Szczyt popołudniowy",
+            "rate": 0.3898,
+            "schedule": {
+              "weekday":  ["19:00-22:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "offpeak",
+            "label": "Pozostałe godziny doby",
+            "rate": 0.0392,
+            "schedule": {
+              "weekday":  ["00:00-07:00", "13:00-19:00", "22:00-24:00"],
+              "saturday": ["00:00-24:00"],
+              "sunday":   ["00:00-24:00"],
+              "holiday":  ["00:00-24:00"]
+            }
+          }
+        ]
+      },
+      {
+        "name": "winter",
+        "label": "Zima (październik–marzec)",
+        "months": [1, 2, 3, 10, 11, 12],
+        "periods": [
+          {
+            "name": "morning_peak",
+            "label": "Szczyt przedpołudniowy",
+            "rate": 0.2203,
+            "schedule": {
+              "weekday":  ["07:00-13:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "afternoon_peak",
+            "label": "Szczyt popołudniowy",
+            "rate": 0.3898,
+            "schedule": {
+              "weekday":  ["16:00-21:00"],
+              "saturday": [],
+              "sunday":   [],
+              "holiday":  []
+            }
+          },
+          {
+            "name": "offpeak",
+            "label": "Pozostałe godziny doby",
+            "rate": 0.0392,
+            "schedule": {
+              "weekday":  ["00:00-07:00", "13:00-16:00", "21:00-24:00"],
+              "saturday": ["00:00-24:00"],
+              "sunday":   ["00:00-24:00"],
+              "holiday":  ["00:00-24:00"]
+            }
+          }
+        ]
+      }
+    ]
+  },
+
+  "fixed_charges_monthly": {
+    "subscription_pln": 2.28,
+    "network_pln_1phase": 7.38,
+    "network_pln_3phase": 10.86,
+    "power_demand_pln_per_kw": 0.0
+  },
+
+  "capacity_monthly_pln": {
+    "below_500kwh": 4.29,
+    "500_to_1200kwh": 10.31,
+    "1200_to_2800kwh": 17.18,
+    "above_2800kwh": 24.05
+  },
+
+  "system_charges_pln_kwh": {
+    "oze": 0.0073,
+    "capacity": 0.0,
+    "quality": 0.0331,
+    "transition": 0.0,
+    "cogeneration": 0.003
+  },
+
+  "excise_pln_kwh": 0.005,
+  "vat_rate": 0.23
+}

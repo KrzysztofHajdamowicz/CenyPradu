@@ -1,0 +1,161 @@
+{
+  "id": "enea-g13active-2026",
+  "name": "Enea Operator — Taryfa G13active",
+  "dso": "ENEA Operator Sp. z o.o.",
+  "tariff_group": "G13active",
+  "valid_from": "2026-01-01",
+  "valid_to": null,
+  "version": "2026",
+  "currency": "PLN",
+  "source_url": "https://www.operator.enea.pl/uslugidystrybucyjne/taryfy-i-cenniki",
+  "notes": "Taryfa zatwierdzona decyzją Prezesa URE. Taryfa trójstrefowa ze strefami zmiennymi co miesiąc, powiązanymi z profilem produkcji OZE. Stawki (netto) jednakowe cały rok, harmonogram stref zmienia się miesięcznie. Strefa zalecanego poboru = najtańsza (zachęta do zużycia w godzinach nadwyżki OZE). Strefa zalecanego ograniczania = najdroższa (szczyty obciążenia sieci). Pozostałe godziny doby = stawka standardowa. Uwaga: godziny stref ustawione wg czasu zimowego (CET) i NIE zmieniają się przy przejściu na CEST. Jakość: 0,0321 zł/kWh od 01.01.2026; od 01.02.2026: 0,0332 zł/kWh.",
+
+  "variable_rates_pln_kwh": {
+    "type": "tou",
+    "seasonal": true,
+    "seasons": [
+      {
+        "name": "jan",
+        "label": "Styczeń",
+        "months": [1],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["23:00-24:00", "00:00-06:00"], "saturday": ["23:00-24:00", "00:00-06:00"], "sunday": ["23:00-24:00", "00:00-06:00"], "holiday": ["23:00-24:00", "00:00-06:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["07:00-10:00", "15:00-20:00"], "saturday": ["07:00-10:00", "15:00-20:00"], "sunday": ["07:00-10:00", "15:00-20:00"], "holiday": ["07:00-10:00", "15:00-20:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["06:00-07:00", "10:00-15:00", "20:00-23:00"], "saturday": ["06:00-07:00", "10:00-15:00", "20:00-23:00"], "sunday": ["06:00-07:00", "10:00-15:00", "20:00-23:00"], "holiday": ["06:00-07:00", "10:00-15:00", "20:00-23:00"] } }
+        ]
+      },
+      {
+        "name": "feb",
+        "label": "Luty",
+        "months": [2],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["23:00-24:00", "00:00-06:00"], "saturday": ["23:00-24:00", "00:00-06:00"], "sunday": ["23:00-24:00", "00:00-06:00"], "holiday": ["23:00-24:00", "00:00-06:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["07:00-09:00", "16:00-21:00"], "saturday": ["07:00-09:00", "16:00-21:00"], "sunday": ["07:00-09:00", "16:00-21:00"], "holiday": ["07:00-09:00", "16:00-21:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["06:00-07:00", "09:00-16:00", "21:00-23:00"], "saturday": ["06:00-07:00", "09:00-16:00", "21:00-23:00"], "sunday": ["06:00-07:00", "09:00-16:00", "21:00-23:00"], "holiday": ["06:00-07:00", "09:00-16:00", "21:00-23:00"] } }
+        ]
+      },
+      {
+        "name": "mar",
+        "label": "Marzec",
+        "months": [3],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["10:00-16:00"], "saturday": ["10:00-16:00"], "sunday": ["10:00-16:00"], "holiday": ["10:00-16:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["06:00-09:00", "16:00-23:00"], "saturday": ["06:00-09:00", "16:00-23:00"], "sunday": ["06:00-09:00", "16:00-23:00"], "holiday": ["06:00-09:00", "16:00-23:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["09:00-10:00", "23:00-24:00", "00:00-06:00"], "saturday": ["09:00-10:00", "23:00-24:00", "00:00-06:00"], "sunday": ["09:00-10:00", "23:00-24:00", "00:00-06:00"], "holiday": ["09:00-10:00", "23:00-24:00", "00:00-06:00"] } }
+        ]
+      },
+      {
+        "name": "apr",
+        "label": "Kwiecień",
+        "months": [4],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["10:00-16:00"], "saturday": ["10:00-16:00"], "sunday": ["10:00-16:00"], "holiday": ["10:00-16:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["06:00-09:00", "18:00-23:00"], "saturday": ["06:00-09:00", "18:00-23:00"], "sunday": ["06:00-09:00", "18:00-23:00"], "holiday": ["06:00-09:00", "18:00-23:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["09:00-10:00", "16:00-18:00", "23:00-24:00", "00:00-06:00"], "saturday": ["09:00-10:00", "16:00-18:00", "23:00-24:00", "00:00-06:00"], "sunday": ["09:00-10:00", "16:00-18:00", "23:00-24:00", "00:00-06:00"], "holiday": ["09:00-10:00", "16:00-18:00", "23:00-24:00", "00:00-06:00"] } }
+        ]
+      },
+      {
+        "name": "may_aug",
+        "label": "Maj–Sierpień",
+        "months": [5, 6, 7, 8],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["09:00-17:00"], "saturday": ["09:00-17:00"], "sunday": ["09:00-17:00"], "holiday": ["09:00-17:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["06:00-09:00", "18:00-23:00"], "saturday": ["06:00-09:00", "18:00-23:00"], "sunday": ["06:00-09:00", "18:00-23:00"], "holiday": ["06:00-09:00", "18:00-23:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["17:00-18:00", "23:00-24:00", "00:00-06:00"], "saturday": ["17:00-18:00", "23:00-24:00", "00:00-06:00"], "sunday": ["17:00-18:00", "23:00-24:00", "00:00-06:00"], "holiday": ["17:00-18:00", "23:00-24:00", "00:00-06:00"] } }
+        ]
+      },
+      {
+        "name": "sep",
+        "label": "Wrzesień",
+        "months": [9],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["10:00-16:00"], "saturday": ["10:00-16:00"], "sunday": ["10:00-16:00"], "holiday": ["10:00-16:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["06:00-09:00", "17:00-23:00"], "saturday": ["06:00-09:00", "17:00-23:00"], "sunday": ["06:00-09:00", "17:00-23:00"], "holiday": ["06:00-09:00", "17:00-23:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["09:00-10:00", "16:00-17:00", "23:00-24:00", "00:00-06:00"], "saturday": ["09:00-10:00", "16:00-17:00", "23:00-24:00", "00:00-06:00"], "sunday": ["09:00-10:00", "16:00-17:00", "23:00-24:00", "00:00-06:00"], "holiday": ["09:00-10:00", "16:00-17:00", "23:00-24:00", "00:00-06:00"] } }
+        ]
+      },
+      {
+        "name": "oct",
+        "label": "Październik",
+        "months": [10],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["10:00-16:00"], "saturday": ["10:00-16:00"], "sunday": ["10:00-16:00"], "holiday": ["10:00-16:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["07:00-09:00", "16:00-23:00"], "saturday": ["07:00-09:00", "16:00-23:00"], "sunday": ["07:00-09:00", "16:00-23:00"], "holiday": ["07:00-09:00", "16:00-23:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["09:00-10:00", "23:00-24:00", "00:00-07:00"], "saturday": ["09:00-10:00", "23:00-24:00", "00:00-07:00"], "sunday": ["09:00-10:00", "23:00-24:00", "00:00-07:00"], "holiday": ["09:00-10:00", "23:00-24:00", "00:00-07:00"] } }
+        ]
+      },
+      {
+        "name": "nov",
+        "label": "Listopad",
+        "months": [11],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["23:00-24:00", "00:00-06:00"], "saturday": ["23:00-24:00", "00:00-06:00"], "sunday": ["23:00-24:00", "00:00-06:00"], "holiday": ["23:00-24:00", "00:00-06:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["07:00-09:00", "14:00-21:00"], "saturday": ["07:00-09:00", "14:00-21:00"], "sunday": ["07:00-09:00", "14:00-21:00"], "holiday": ["07:00-09:00", "14:00-21:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["06:00-07:00", "09:00-14:00", "21:00-23:00"], "saturday": ["06:00-07:00", "09:00-14:00", "21:00-23:00"], "sunday": ["06:00-07:00", "09:00-14:00", "21:00-23:00"], "holiday": ["06:00-07:00", "09:00-14:00", "21:00-23:00"] } }
+        ]
+      },
+      {
+        "name": "dec",
+        "label": "Grudzień",
+        "months": [12],
+        "periods": [
+          { "name": "consumption", "label": "Strefa zalecanego poboru", "rate": 0.0730,
+            "schedule": { "weekday": ["23:00-24:00", "00:00-06:00"], "saturday": ["23:00-24:00", "00:00-06:00"], "sunday": ["23:00-24:00", "00:00-06:00"], "holiday": ["23:00-24:00", "00:00-06:00"] } },
+          { "name": "reduction", "label": "Strefa zalecanego ograniczania", "rate": 0.3032,
+            "schedule": { "weekday": ["07:00-10:00", "13:00-20:00"], "saturday": ["07:00-10:00", "13:00-20:00"], "sunday": ["07:00-10:00", "13:00-20:00"], "holiday": ["07:00-10:00", "13:00-20:00"] } },
+          { "name": "remaining", "label": "Pozostałe godziny doby", "rate": 0.2456,
+            "schedule": { "weekday": ["06:00-07:00", "10:00-13:00", "20:00-23:00"], "saturday": ["06:00-07:00", "10:00-13:00", "20:00-23:00"], "sunday": ["06:00-07:00", "10:00-13:00", "20:00-23:00"], "holiday": ["06:00-07:00", "10:00-13:00", "20:00-23:00"] } }
+        ]
+      }
+    ]
+  },
+
+  "fixed_charges_monthly": {
+    "subscription_pln": 3.84,
+    "network_pln_1phase": 9.34,
+    "network_pln_3phase": 14.18,
+    "power_demand_pln_per_kw": 0.0
+  },
+
+  "capacity_monthly_pln": {
+    "below_500kwh": 4.29,
+    "500_to_1200kwh": 10.31,
+    "1200_to_2800kwh": 17.18,
+    "above_2800kwh": 24.05
+  },
+
+  "system_charges_pln_kwh": {
+    "oze": 0.0073,
+    "capacity": 0.0,
+    "quality": 0.0332,
+    "transition": 0.0,
+    "cogeneration": 0.003
+  },
+
+  "excise_pln_kwh": 0.005,
+  "vat_rate": 0.23
+}

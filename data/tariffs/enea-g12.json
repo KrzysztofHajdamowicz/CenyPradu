@@ -1,0 +1,65 @@
+{
+  "id": "enea-g12-2026",
+  "name": "Enea Operator — Taryfa G12",
+  "dso": "ENEA Operator Sp. z o.o.",
+  "tariff_group": "G12",
+  "valid_from": "2026-01-01",
+  "valid_to": null,
+  "version": "2026",
+  "currency": "PLN",
+  "source_url": "https://operator.enea.pl/dla-domu/taryfy",
+  "notes": "Taryfa zatwierdzona decyzją Prezesa URE nr DRE.WRE.4211.52.11.2025.TG z dnia 17.12.2025 r. Strefy (pkt 3.2.7): 14 godzin dziennych i 10 nocnych – godziny określa Operator. Typowy harmonogram: dzienna 06:00–13:00 i 15:00–22:00 (cały rok, w tym soboty). Stawka jakościowa od 01.02.2026 wynosi 0,0332 zł/kWh.",
+
+  "variable_rates_pln_kwh": {
+    "type": "tou",
+    "periods": [
+      {
+        "name": "day",
+        "label": "Dzienna",
+        "rate": 0.2779,
+        "schedule": {
+          "weekday":  ["06:00-13:00", "15:00-22:00"],
+          "saturday": ["06:00-13:00", "15:00-22:00"],
+          "sunday":   [],
+          "holiday":  []
+        }
+      },
+      {
+        "name": "night",
+        "label": "Nocna",
+        "rate": 0.0913,
+        "schedule": {
+          "weekday":  ["00:00-06:00", "13:00-15:00", "22:00-24:00"],
+          "saturday": ["00:00-06:00", "13:00-15:00", "22:00-24:00"],
+          "sunday":   ["00:00-24:00"],
+          "holiday":  ["00:00-24:00"]
+        }
+      }
+    ]
+  },
+
+  "fixed_charges_monthly": {
+    "subscription_pln": 3.84,
+    "network_pln_1phase": 9.34,
+    "network_pln_3phase": 14.18,
+    "power_demand_pln_per_kw": 0.0
+  },
+
+  "capacity_monthly_pln": {
+    "below_500kwh": 4.29,
+    "500_to_1200kwh": 10.31,
+    "1200_to_2800kwh": 17.18,
+    "above_2800kwh": 24.05
+  },
+
+  "system_charges_pln_kwh": {
+    "oze": 0.0073,
+    "capacity": 0.0,
+    "quality": 0.0331,
+    "transition": 0.0,
+    "cogeneration": 0.003
+  },
+
+  "excise_pln_kwh": 0.005,
+  "vat_rate": 0.23
+}

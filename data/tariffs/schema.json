@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/cenypradu/CenyPradu/main/tariffs/schema.json",
+  "title": "Taryfa dystrybucji energii elektrycznej",
+  "description": "Schemat pliku taryfy dystrybucji energii elektrycznej OSD w Polsce",
+  "type": "object",
+  "required": ["id", "name", "dso", "tariff_group", "valid_from", "currency", "variable_rates_pln_kwh", "vat_rate"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unikalny identyfikator taryfy, np. tauron-g11-2026",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "name": {
+      "type": "string",
+      "description": "Czytelna nazwa taryfy"
+    },
+    "dso": {
+      "type": "string",
+      "description": "Pełna nazwa Operatora Systemu Dystrybucyjnego"
+    },
+    "tariff_group": {
+      "type": "string",
+      "description": "Symbol grupy taryfowej",
+      "enum": ["G11", "G12", "G12w", "G13", "G13s", "G13active", "B11", "C11", "C12a", "C21", "C22a"]
+    },
+    "valid_from": {
+      "type": "string",
+      "description": "Data wejścia w życie taryfy (YYYY-MM-DD)",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "valid_to": {
+      "type": ["string", "null"],
+      "description": "Data wygaśnięcia taryfy lub null jeśli bezterminowa",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Rok/wersja taryfy"
+    },
+    "currency": {
+      "type": "string",
+      "description": "Waluta stawek",
+      "enum": ["PLN"]
+    },
+    "source_url": {
+      "type": "string",
+      "description": "URL źródłowego dokumentu taryfy",
+      "format": "uri"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Dodatkowe uwagi do taryfy"
+    },
+    "variable_rates_pln_kwh": {
+      "type": "object",
+      "description": "Składnik zmienny stawki sieciowej",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["flat", "tou"],
+          "description": "flat = jednoprzedziałowa, tou = wieloprzedziałowa (Time-of-Use)"
+        },
+        "rate": {
+          "type": "number",
+          "description": "Stawka dla taryfy flat w PLN/kWh",
+          "minimum": 0
+        },
+        "seasonal": {
+          "type": "boolean",
+          "description": "Czy taryfa ma zmienne strefy/stawki w zależności od pory roku (true = użyj 'seasons' zamiast 'periods')"
+        },
+        "periods": {
+          "type": "array",
+          "description": "Okresy strefowe dla taryfy TOU (niesezonowej)",
+          "items": { "$ref": "#/$defs/touPeriod" }
+        },
+        "seasons": {
+          "type": "array",
+          "description": "Warianty sezonowe taryfy TOU — każdy sezon definiuje miesiące obowiązywania i własne strefy",
+          "items": {
+            "type": "object",
+            "required": ["name", "months", "periods"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Identyfikator sezonu (np. summer, winter, jan, may_aug)"
+              },
+              "label": {
+                "type": "string",
+                "description": "Czytelna nazwa sezonu"
+              },
+              "months": {
+                "type": "array",
+                "description": "Numery miesięcy (1–12) objętych tym sezonem",
+                "items": { "type": "integer", "minimum": 1, "maximum": 12 }
+              },
+              "periods": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/touPeriod" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "fixed_charges_monthly": {
+      "type": "object",
+      "description": "Opłaty stałe miesięczne (netto, PLN/miesiąc)",
+      "properties": {
+        "subscription_pln": {
+          "type": "number",
+          "description": "Stawka opłaty abonamentowej przy rozliczeniu miesięcznym (PLN/m-c)",
+          "minimum": 0
+        },
+        "network_pln_1phase": {
+          "type": "number",
+          "description": "Składnik stały stawki sieciowej dla instalacji 1-fazowej (PLN/m-c)",
+          "minimum": 0
+        },
+        "network_pln_3phase": {
+          "type": "number",
+          "description": "Składnik stały stawki sieciowej dla instalacji 3-fazowej (PLN/m-c)",
+          "minimum": 0
+        },
+        "power_demand_pln_per_kw": {
+          "type": "number",
+          "description": "Składnik stały za zamówioną moc (PLN/kW/m-c) – 0 dla grup G",
+          "minimum": 0
+        }
+      }
+    },
+    "capacity_monthly_pln": {
+      "type": "object",
+      "description": "Opłata mocowa (zł/m-c) wg rocznego zużycia – dla odbiorców art. 89a ust. 1 pkt 1 ustawy o rynku mocy",
+      "properties": {
+        "below_500kwh":     {"type": "number", "minimum": 0},
+        "500_to_1200kwh":   {"type": "number", "minimum": 0},
+        "1200_to_2800kwh":  {"type": "number", "minimum": 0},
+        "above_2800kwh":    {"type": "number", "minimum": 0}
+      }
+    },
+    "system_charges_pln_kwh": {
+      "type": "object",
+      "description": "Systemowe opłaty zmienne (netto, PLN/kWh)",
+      "properties": {
+        "oze": {
+          "type": "number",
+          "description": "Opłata OZE (PLN/kWh)",
+          "minimum": 0
+        },
+        "capacity": {
+          "type": "number",
+          "description": "Opłata mocowa w PLN/kWh (dotyczy grup B/C; dla G = 0, opłata miesięczna w capacity_monthly_pln)",
+          "minimum": 0
+        },
+        "quality": {
+          "type": "number",
+          "description": "Opłata jakościowa (PLN/kWh)",
+          "minimum": 0
+        },
+        "transition": {
+          "type": "number",
+          "description": "Opłata przejściowa KDT (PLN/kWh) – 0 w 2026 r.",
+          "minimum": 0
+        },
+        "cogeneration": {
+          "type": "number",
+          "description": "Opłata kogeneracyjna (PLN/kWh)",
+          "minimum": 0
+        }
+      }
+    },
+    "excise_pln_kwh": {
+      "type": "number",
+      "description": "Akcyza (PLN/kWh) – standardowo 0,005 PLN/kWh",
+      "minimum": 0
+    },
+    "vat_rate": {
+      "type": "number",
+      "description": "Stawka VAT jako ułamek dziesiętny (np. 0.23 = 23%)",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "touPeriod": {
+      "type": "object",
+      "required": ["name", "label", "rate", "schedule"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Identyfikator strefy (day, night, peak, offpeak, morning_peak, afternoon_peak, consumption, reduction, remaining)"
+        },
+        "label": {
+          "type": "string",
+          "description": "Polska nazwa strefy"
+        },
+        "rate": {
+          "type": "number",
+          "description": "Stawka strefy w PLN/kWh",
+          "minimum": 0
+        },
+        "schedule": {
+          "type": "object",
+          "description": "Godziny obowiązywania strefy według dnia tygodnia",
+          "properties": {
+            "weekday": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^\\d{2}:\\d{2}-\\d{2}:\\d{2}$"}
+            },
+            "saturday": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^\\d{2}:\\d{2}-\\d{2}:\\d{2}$"}
+            },
+            "sunday": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^\\d{2}:\\d{2}-\\d{2}:\\d{2}$"}
+            },
+            "holiday": {
+              "type": "array",
+              "items": {"type": "string", "pattern": "^\\d{2}:\\d{2}-\\d{2}:\\d{2}$"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

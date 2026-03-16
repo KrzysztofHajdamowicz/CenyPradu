@@ -1,0 +1,65 @@
+{
+  "id": "tauron-g12w-2026",
+  "name": "Tauron Dystrybucja — Taryfa G12w",
+  "dso": "TAURON Dystrybucja S.A.",
+  "tariff_group": "G12w",
+  "valid_from": "2026-01-01",
+  "valid_to": null,
+  "version": "2026",
+  "currency": "PLN",
+  "source_url": "https://www.tauron-dystrybucja.pl/taryfy",
+  "notes": "Taryfa zatwierdzona decyzją Prezesa URE nr DRE.WRE.4211.54.8.2025.ASa1 z dnia 17.12.2025 r. Strefa szczytowa: pon–pt 06:00–13:00 i 15:00–22:00. Strefa pozaszczytowa: pozostałe godziny pon–pt + wszystkie godziny sobót, niedziel i świąt.",
+
+  "variable_rates_pln_kwh": {
+    "type": "tou",
+    "periods": [
+      {
+        "name": "peak",
+        "label": "Szczytowa",
+        "rate": 0.3298,
+        "schedule": {
+          "weekday":  ["06:00-13:00", "15:00-22:00"],
+          "saturday": [],
+          "sunday":   [],
+          "holiday":  []
+        }
+      },
+      {
+        "name": "offpeak",
+        "label": "Pozaszczytowa",
+        "rate": 0.0512,
+        "schedule": {
+          "weekday":  ["00:00-06:00", "13:00-15:00", "22:00-24:00"],
+          "saturday": ["00:00-24:00"],
+          "sunday":   ["00:00-24:00"],
+          "holiday":  ["00:00-24:00"]
+        }
+      }
+    ]
+  },
+
+  "fixed_charges_monthly": {
+    "subscription_pln": 2.28,
+    "network_pln_1phase": 7.38,
+    "network_pln_3phase": 10.86,
+    "power_demand_pln_per_kw": 0.0
+  },
+
+  "capacity_monthly_pln": {
+    "below_500kwh": 4.29,
+    "500_to_1200kwh": 10.31,
+    "1200_to_2800kwh": 17.18,
+    "above_2800kwh": 24.05
+  },
+
+  "system_charges_pln_kwh": {
+    "oze": 0.0073,
+    "capacity": 0.0,
+    "quality": 0.0331,
+    "transition": 0.0,
+    "cogeneration": 0.003
+  },
+
+  "excise_pln_kwh": 0.005,
+  "vat_rate": 0.23
+}
