@@ -43,7 +43,7 @@ WARSAW_TZ = ZoneInfo("Europe/Warsaw")
 OUTPUT_DIR = "data/prices"
 
 # Sanity checks — historyczny zakres cen energii w Polsce (PLN/MWh)
-MIN_PRICE = -1000.0    # Ujemne ceny możliwe przy nadpodaży OZE
+MIN_PRICE = -1000.0  # Ujemne ceny możliwe przy nadpodaży OZE
 MAX_PRICE = 10_000.0
 
 # Liczba godzin: 23 (spring-forward), 24 (normalny dzień), 25 (fall-back)
@@ -54,6 +54,7 @@ MAX_HOURS = 25
 # ---------------------------------------------------------------------------
 # Pobieranie HTML (requests + BeautifulSoup4)
 # ---------------------------------------------------------------------------
+
 
 def get_html_requests(url: str) -> str:
     """
@@ -71,8 +72,7 @@ def get_html_requests(url: str) -> str:
             "Chrome/121.0.0.0 Safari/537.36"
         ),
         "Accept": (
-            "text/html,application/xhtml+xml,application/xml;q=0.9,"
-            "image/webp,*/*;q=0.8"
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
         ),
         "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
         "Accept-Encoding": "gzip, deflate, br",
@@ -91,6 +91,7 @@ def get_html_requests(url: str) -> str:
 # ---------------------------------------------------------------------------
 # Parsowanie HTML
 # ---------------------------------------------------------------------------
+
 
 def parse_html_table(html: str, delivery_date: date) -> list[float]:
     """
@@ -224,6 +225,7 @@ def _parse_price(text: str) -> float | None:
 # Budowanie listy z timestampami ISO 8601
 # ---------------------------------------------------------------------------
 
+
 def build_price_list(delivery_date: date, prices: list[float]) -> list[dict]:
     """
     Konwertuje listę cen (w kolejności chronologicznej) na listę obiektów:
@@ -245,8 +247,12 @@ def build_price_list(delivery_date: date, prices: list[float]) -> list[dict]:
       ordinal 2 → 03:00+02:00 (CEST — przeskok przez 02:00)
     """
     local_midnight = datetime(
-        delivery_date.year, delivery_date.month, delivery_date.day,
-        0, 0, 0,
+        delivery_date.year,
+        delivery_date.month,
+        delivery_date.day,
+        0,
+        0,
+        0,
         tzinfo=WARSAW_TZ,
     )
     midnight_utc = local_midnight.astimezone(ZoneInfo("UTC"))
@@ -255,10 +261,12 @@ def build_price_list(delivery_date: date, prices: list[float]) -> list[dict]:
     for ordinal, price in enumerate(prices):
         utc_dt = midnight_utc + timedelta(hours=ordinal)
         local_dt = utc_dt.astimezone(WARSAW_TZ)
-        result.append({
-            "time": _format_local_dt(local_dt),
-            "price": price,
-        })
+        result.append(
+            {
+                "time": _format_local_dt(local_dt),
+                "price": price,
+            }
+        )
 
     return result
 
@@ -269,12 +277,16 @@ def _format_local_dt(dt: datetime) -> str:
     total_sec = int(offset.total_seconds())
     sign = "+" if total_sec >= 0 else "-"
     total_sec = abs(total_sec)
-    return dt.strftime("%Y-%m-%d %H:%M:%S") + f"{sign}{total_sec // 3600:02d}:{(total_sec % 3600) // 60:02d}"
+    return (
+        dt.strftime("%Y-%m-%d %H:%M:%S")
+        + f"{sign}{total_sec // 3600:02d}:{(total_sec % 3600) // 60:02d}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Walidacja
 # ---------------------------------------------------------------------------
+
 
 def validate_prices(prices: list[dict], delivery_date: date) -> None:
     """
@@ -302,7 +314,7 @@ def validate_prices(prices: list[dict], delivery_date: date) -> None:
     vals = [e["price"] for e in prices]
     print(
         f"Walidacja OK: {n} godzin | "
-        f"min={min(vals):.2f}  max={max(vals):.2f}  avg={sum(vals)/n:.2f} PLN/MWh",
+        f"min={min(vals):.2f}  max={max(vals):.2f}  avg={sum(vals) / n:.2f} PLN/MWh",
         file=sys.stderr,
     )
 
@@ -311,7 +323,10 @@ def validate_prices(prices: list[dict], delivery_date: date) -> None:
 # Zapis do pliku
 # ---------------------------------------------------------------------------
 
-def save_prices(delivery_date: date, prices: list[dict], *, force: bool = False) -> None:
+
+def save_prices(
+    delivery_date: date, prices: list[dict], *, force: bool = False
+) -> None:
     """
     Zapisuje ceny do data/prices/YYYY-MM-DD.json i aktualizuje index.json.
     Nie nadpisuje istniejącego pliku chyba że force=True.
@@ -364,6 +379,7 @@ def _update_index(date_str: str, updated_at: str) -> None:
 # ---------------------------------------------------------------------------
 # Weryfikacja — porównanie świeżo pobranych danych z istniejącym JSON
 # ---------------------------------------------------------------------------
+
 
 def verify_prices(delivery_date: date, fresh_prices: list[dict]) -> bool:
     """
@@ -427,6 +443,7 @@ def verify_prices(delivery_date: date, fresh_prices: list[dict]) -> bool:
 # Pobieranie i parsowanie — wspólny krok
 # ---------------------------------------------------------------------------
 
+
 def fetch_and_parse(delivery_date: date) -> list[dict]:
     """
     Pobiera HTML z TGE, parsuje tabelę, buduje timestampy i waliduje.
@@ -473,6 +490,7 @@ def fetch_and_parse(delivery_date: date) -> list[dict]:
 # ---------------------------------------------------------------------------
 # CLI i główna funkcja
 # ---------------------------------------------------------------------------
+
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(

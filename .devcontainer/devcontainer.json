@@ -1,9 +1,9 @@
 {
   "name": "CenyPradu",
-  "image": "mcr.microsoft.com/devcontainers/python:3.12-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14-bookworm",
 
-  // Instalacja zależności Python + Playwright po stworzeniu kontenera
-  "postCreateCommand": "pip install -r scripts/requirements.txt",
+  // Instalacja uv + zależności po stworzeniu kontenera
+  "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && . $HOME/.local/bin/env && uv sync",
 
   // Port 8080: python -m http.server 8080 do podglądu frontendu
   "forwardPorts": [8080],

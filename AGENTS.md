@@ -17,9 +17,14 @@ Automatyczne pobieranie godzinowych cen energii elektrycznej z TGE (Towarowa Gie
 ```
 scripts/
   scrape_tge.py           Python scraper (requests + BeautifulSoup + lxml)
-  requirements.txt        Zależności Python
+pyproject.toml            Zależności Python (uv)
+uv.lock                   Lockfile zależności
 .github/workflows/
   scrape-prices.yml       Cron 10:00 UTC, workflow_dispatch z delivery_date
+  ci.yml                  CI: lint Python (ruff), test scraper, walidacja taryf, actionlint
+  sbom.yml                Generowanie SBOM (CycloneDX) przy zmianach *.py
+.github/
+  dependabot.yml          Automatyczne PRy z aktualizacjami zależności (uv + actions)
 data/prices/
   index.json              Indeks dostępnych dat {"dates": [...], "latest": "..."}
   YYYY-MM-DD.json         Ceny godzinowe Fixing I
@@ -80,7 +85,8 @@ Harmonogram stref: `"HH:MM-HH:MM"` (czas lokalny), typy dni: `weekday`/`saturday
 ## Konwencje kodowania
 
 - **Język:** polski (komentarze, docstringi, logi, UI, commity)
-- **Python:** snake_case, type hints (3.12+), logi na stderr, `argparse` dla CLI
+- **Python:** snake_case, type hints (3.14+), logi na stderr, `argparse` dla CLI
+- **Zarządzanie pakietami:** `uv` (nie pip), zależności w `pyproject.toml`, lockfile `uv.lock`
 - **JavaScript:** camelCase, ES2022 modules, vanilla (bez frameworków/bundlerów)
 - **Nazwy plików:** snake_case (Python), kebab-case (taryfy JSON)
 - **Frontend:** vanilla HTML/CSS/JS, Tailwind CDN, Chart.js CDN, brak npm/webpack
@@ -90,7 +96,9 @@ Harmonogram stref: `"HH:MM-HH:MM"` (czas lokalny), typy dni: `weekday`/`saturday
 Workflow `scrape-prices.yml`:
 - Trigger: cron `0 10 * * *` (11:00 CET / 12:00 CEST) + `workflow_dispatch`
 - Input: `delivery_date` (YYYY-MM-DD, opcjonalny)
-- Kroki: checkout → Python 3.12 → pip install → `scrape_tge.py` → git commit+push
+- Kroki: checkout → uv sync → `scrape_tge.py` → git commit+push
+- CI (`ci.yml`): ruff lint+format, test scraper, walidacja JSON Schema taryf, actionlint
+- SBOM (`sbom.yml`): CycloneDX SBOM generowany przy zmianach *.py, atestowany Sigstore
 - Commit msg: `data: ceny TGE Fixing I dla YYYY-MM-DD`
 
 ## Uwagi
@@ -98,3 +106,5 @@ Workflow `scrape-prices.yml`:
 - Scraper używa `requests` (nie Playwright) — TGE nie wymaga renderowania JS
 - Taryfy zmieniane ręcznie (zatwierdzane przez URE, aktualizacja ~raz/rok)
 - `scraped_webpage.html` w root to artefakt debugowy, nie część systemu
+- GitHub Actions pinowane do pełnych SHA (supply chain security)
+- Dependabot automatycznie tworzy PRy z aktualizacjami zależności co tydzień
