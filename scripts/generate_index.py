@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Generate a directory listing index.html for GitHub Pages."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 WHITELIST = ["data", "web", "docs", "README.md"]
