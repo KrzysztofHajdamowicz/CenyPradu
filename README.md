@@ -40,16 +40,16 @@ https://<user>.github.io/CenyPradu/data/prices/index.json
 
 ```bash
 # Domyślnie pobiera ceny na jutro
-python scripts/scrape_tge.py
+uv run python scripts/scrape_tge.py
 
 # Backfill — konkretna data dostawy
-python scripts/scrape_tge.py 2026-03-01
+uv run python scripts/scrape_tge.py 2026-03-01
 
 # Nadpisz istniejący plik JSON
-python scripts/scrape_tge.py --force 2026-03-01
+uv run python scripts/scrape_tge.py --force 2026-03-01
 
 # Weryfikacja — porównaj świeże dane ze strony TGE z zapisanym plikiem
-python scripts/scrape_tge.py --verify 2026-03-01
+uv run python scripts/scrape_tge.py --verify 2026-03-01
 ```
 
 | Parametr    | Opis                                                                 |
