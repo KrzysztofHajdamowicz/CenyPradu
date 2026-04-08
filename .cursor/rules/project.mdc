@@ -23,7 +23,7 @@ Automatyczne pobieranie godzinowych cen energii z TGE (Fixing I, RDN) + katalog 
 scripts/scrape_tge.py          # Scraper: requests + BeautifulSoup + lxml
 scripts/requirements.txt       # Zależności Python
 .github/workflows/scrape-prices.yml  # Cron 10:00 UTC + workflow_dispatch
-data/prices/YYYY-MM-DD.json    # Ceny godzinowe (61 plików, 2026-01–03)
+data/prices/YYYY/MM/YYYY-MM-DD.json    # Ceny godzinowe (61 plików, 2026-01–03)
 data/prices/index.json         # Indeks dat
 data/tariffs/*.json             # 17 taryf + schema.json
 web/js/tariffs.js               # Kalkulator kosztów (flat/tou/seasonal)
@@ -44,7 +44,7 @@ docs/                           # Specyfikacje projektowe (fazy 1-3)
 ## Format danych
 
 ```json
-// data/prices/YYYY-MM-DD.json
+// data/prices/YYYY/MM/YYYY-MM-DD.json
 {"date": "2026-03-02", "scraped_at": "...", "unit": "PLN/MWh",
  "prices": [{"time": "2026-03-02 00:00:00+01:00", "price": 364.6}, ...]}
 

@@ -32,7 +32,7 @@ TGE publ. 10:30 → GitHub Action 11:00 → scraper → JSON w repo → GitHub P
 Ceny godzinowe Fixing I z RDN (Rynek Dnia Następnego) dostępne pod:
 
 ```
-https://<user>.github.io/CenyPradu/data/prices/YYYY-MM-DD.json
+https://<user>.github.io/CenyPradu/data/prices/YYYY/MM/YYYY-MM-DD.json
 https://<user>.github.io/CenyPradu/data/prices/index.json
 ```
 

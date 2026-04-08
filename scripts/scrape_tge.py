@@ -11,7 +11,7 @@ Struktura HTML:
   Wiersze 15-min:    td[0]="YYYY-MM-DD_Q00:15", td[1]="15" — ignorujemy
   Data:    .kontrakt-date > small  ("dla dostawy w dniu DD-MM-YYYY")
 
-Format wyjściowy (data/prices/YYYY-MM-DD.json):
+Format wyjściowy (data/prices/YYYY/MM/YYYY-MM-DD.json):
   {
     "date": "2026-02-28",
     "scraped_at": "2026-02-27T10:05:32Z",
@@ -324,17 +324,28 @@ def validate_prices(prices: list[dict], delivery_date: date) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _price_file_path(delivery_date: date) -> str:
+    """Zwraca ścieżkę data/prices/YYYY/MM/YYYY-MM-DD.json."""
+    date_str = delivery_date.strftime("%Y-%m-%d")
+    return os.path.join(
+        OUTPUT_DIR,
+        str(delivery_date.year),
+        f"{delivery_date.month:02d}",
+        f"{date_str}.json",
+    )
+
+
 def save_prices(
     delivery_date: date, prices: list[dict], *, force: bool = False
 ) -> None:
     """
-    Zapisuje ceny do data/prices/YYYY-MM-DD.json i aktualizuje index.json.
+    Zapisuje ceny do data/prices/YYYY/MM/YYYY-MM-DD.json i aktualizuje index.json.
     Nie nadpisuje istniejącego pliku chyba że force=True.
     """
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    price_file = _price_file_path(delivery_date)
+    os.makedirs(os.path.dirname(price_file), exist_ok=True)
 
     date_str = delivery_date.strftime("%Y-%m-%d")
-    price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
 
     if os.path.exists(price_file) and not force:
         print(f"Plik {price_file} już istnieje — pomijam.", file=sys.stderr)
@@ -386,8 +397,7 @@ def verify_prices(delivery_date: date, fresh_prices: list[dict]) -> bool:
     Porównuje świeżo pobrane ceny z zapisanym plikiem JSON.
     Zwraca True jeśli dane się zgadzają, False jeśli są różnice.
     """
-    date_str = delivery_date.strftime("%Y-%m-%d")
-    price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
+    price_file = _price_file_path(delivery_date)
 
     if not os.path.exists(price_file):
         print(f"ERROR: Brak pliku {price_file} do weryfikacji.", file=sys.stderr)

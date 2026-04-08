@@ -67,7 +67,7 @@ CenyPradu/
 ├── data/
 │   ├── prices/
 │   │   ├── index.json              # Faza 1: indeks dostępnych dat
-│   │   └── YYYY-MM-DD.json         # Faza 1: ceny dla daty dostawy
+│   │   └── YYYY/MM/YYYY-MM-DD.json # Faza 1: ceny dla daty dostawy
 │   └── tariffs/
 │       ├── schema.json             # Faza 2: JSON Schema walidacji
 │       ├── tauron-g11.json         # Faza 2: taryfa Tauron G11
@@ -110,7 +110,7 @@ CenyPradu/
 
 ## Format danych
 
-### `data/prices/YYYY-MM-DD.json`
+### `data/prices/YYYY/MM/YYYY-MM-DD.json`
 
 Data w nazwie pliku to **data dostawy** (dzień, na który ceny obowiązują), nie data scrapowania.
 

@@ -50,13 +50,13 @@ docs/
 4. Cena Fixing I: `td[2]`, format polski (`312,50`)
 5. Buduje timestampy z UTC offset (Europe/Warsaw, obsługa DST 23/24/25h)
 6. Waliduje: 23–25 godzin, ceny w zakresie −500–10 000 PLN/MWh
-7. Zapisuje do `data/prices/YYYY-MM-DD.json` + aktualizuje `index.json`
+7. Zapisuje do `data/prices/YYYY/MM/YYYY-MM-DD.json` + aktualizuje `index.json`
 
 CLI: `python scripts/scrape_tge.py [YYYY-MM-DD] [--force] [--verify]`
 
 ## Formaty danych
 
-### Ceny (`data/prices/YYYY-MM-DD.json`)
+### Ceny (`data/prices/YYYY/MM/YYYY-MM-DD.json`)
 
 ```json
 {

@@ -14,7 +14,7 @@ Scraper działa od 2026-01-01. Dane zbierane codziennie przez GitHub Actions.
 
 1. GitHub Actions uruchamia się codziennie o 11:00 CET (cron `0 10 * * *` UTC)
 2. Skrypt scrapuje `https://tge.pl/energia-elektryczna-rdn?dateShow=DD-MM-YYYY`
-3. Pobrane ceny zapisywane są jako `data/prices/YYYY-MM-DD.json`
+3. Pobrane ceny zapisywane są jako `data/prices/YYYY/MM/YYYY-MM-DD.json`
 4. `data/prices/index.json` jest aktualizowany
 5. Zmiany są commitowane i pushowane do gałęzi `main`
 6. Pliki JSON dostępne publicznie przez GitHub Pages
@@ -31,7 +31,7 @@ scripts/
   scrape-prices.yml           # Harmonogram + CI
 data/prices/
   index.json                  # Indeks dostępnych dat
-  YYYY-MM-DD.json             # Ceny godzinowe
+  YYYY/MM/YYYY-MM-DD.json    # Ceny godzinowe
 ```
 
 ---
