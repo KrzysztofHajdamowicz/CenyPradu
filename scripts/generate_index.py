@@ -44,7 +44,9 @@ def build_tree(directory: Path, prefix: str = "", root: Path | None = None) -> s
     filtered = []
     for e in entries:
         if e.is_dir():
-            if any(f for f in e.rglob("*") if f.is_file() and f.name not in IGNORE_FILES):
+            if any(
+                f for f in e.rglob("*") if f.is_file() and f.name not in IGNORE_FILES
+            ):
                 filtered.append(e)
         else:
             filtered.append(e)
