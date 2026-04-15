@@ -11,6 +11,6 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff>=0.11",
+    "ruff>=0.15.10",
     "check-jsonschema>=0.31",
 ]
