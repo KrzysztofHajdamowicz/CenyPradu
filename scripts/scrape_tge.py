@@ -43,7 +43,7 @@ WARSAW_TZ = ZoneInfo("Europe/Warsaw")
 OUTPUT_DIR = "data/prices"
 
 # Sanity checks — historyczny zakres cen energii w Polsce (PLN/MWh)
-MIN_PRICE = -1000.0  # Ujemne ceny możliwe przy nadpodaży OZE
+MIN_PRICE = -2_000.0  # Ujemne ceny możliwe przy nadpodaży OZE
 MAX_PRICE = 10_000.0
 
 # Liczba godzin: 23 (spring-forward), 24 (normalny dzień), 25 (fall-back)
