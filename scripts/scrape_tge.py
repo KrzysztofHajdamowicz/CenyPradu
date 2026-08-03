@@ -35,7 +35,7 @@ import json
 import os
 import re
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 TGE_BASE_URL = "https://tge.pl/energia-elektryczna-rdn"
@@ -351,7 +351,7 @@ def save_prices(
         print(f"Plik {price_file} już istnieje — pomijam.", file=sys.stderr)
         return
 
-    scraped_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    scraped_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     data = {
         "date": date_str,
         "scraped_at": scraped_at,
@@ -466,7 +466,7 @@ def fetch_and_parse(delivery_date: date) -> list[dict]:
 
     try:
         html = get_html_requests(url)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — granica CLI, każdy błąd pobierania kończy program
         print(f"ERROR: Nie udało się pobrać strony: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -545,7 +545,7 @@ def resolve_delivery_date(args: argparse.Namespace) -> date:
             )
             sys.exit(1)
 
-    return date.today() + timedelta(days=1)
+    return datetime.now(WARSAW_TZ).date() + timedelta(days=1)
 
 
 def main(argv: list[str] | None = None) -> None:

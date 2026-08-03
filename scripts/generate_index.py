@@ -7,9 +7,10 @@ by default.
 """
 
 import re
-from datetime import date
+from datetime import datetime
 from html import escape
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 WHITELIST = ["data", "web", "docs", "README.md"]
 IGNORE_FILES = {".gitkeep", ".DS_Store"}
@@ -54,7 +55,7 @@ document.querySelectorAll('.toggle').forEach(el => {{
 </html>
 """
 
-TODAY = date.today()
+TODAY = datetime.now(ZoneInfo("Europe/Warsaw")).date()
 CURRENT_YEAR = str(TODAY.year)
 CURRENT_MONTH = f"{TODAY.month:02d}"
 
@@ -116,7 +117,7 @@ _group_counter = 0
 
 
 def _next_group_id() -> str:
-    global _group_counter  # noqa: PLW0603
+    global _group_counter
     _group_counter += 1
     return f"g{_group_counter}"
 

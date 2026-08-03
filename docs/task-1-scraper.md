@@ -77,7 +77,7 @@ TGE_BASE_URL = "https://tge.pl/energia-elektryczna-rdn"
 WARSAW_TZ = ZoneInfo("Europe/Warsaw")
 OUTPUT_DIR = "data/prices"
 MIN_PRICE, MAX_PRICE = -500.0, 10_000.0  # PLN/MWh
-MIN_HOURS, MAX_HOURS = 23, 25            # DST: 23/24/25 godzin
+MIN_HOURS, MAX_HOURS = 23, 25  # DST: 23/24/25 godzin
 ```
 
 ### Funkcje
