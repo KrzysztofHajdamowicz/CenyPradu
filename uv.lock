@@ -51,7 +51,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "check-jsonschema", specifier = ">=0.38.0" },
+    { name = "check-jsonschema", specifier = ">=0.38.1" },
     { name = "ruff", specifier = ">=0.16.8" },
 ]
 
@@ -107,7 +107,7 @@ wheels = [
 
 [[package]]
 name = "check-jsonschema"
-version = "0.38.0"
+version = "0.38.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -116,9 +116,9 @@ dependencies = [
     { name = "requests" },
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/a0/d5ab25da3d4612a47b1e68cbbdffdc076ca3a9771027573d4ed9f4304d49/check_jsonschema-0.38.0.tar.gz", hash = "sha256:bb6899cc24ab0ced664e4646423d35b72db245cea75109c0b9e64d13087d1b8c", size = 436740, upload-time = "2026-08-09T04:31:07.055Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/43/f4fc32926d243033eb50055a4eab6324da925900660a2e1aeb948884e99b/check_jsonschema-0.38.1.tar.gz", hash = "sha256:6b358ad8da9a41d7a61707739aa016564f4745bcb28899bd3b62739092e96bac", size = 444472, upload-time = "2026-09-22T22:22:11.314Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/8b/810a6d7048cfc3db2804b36ed6ff8e8cd0855a88b9a205752f27a4521f85/check_jsonschema-0.38.0-py3-none-any.whl", hash = "sha256:a4fa877ae92b1df812c601b68fec75fe10d1f7d827a7e7f6b218f6712deead2d", size = 420163, upload-time = "2026-08-09T04:31:05.412Z" },
+    { url = "https://files.pythonhosted.org/packages/50/60/28c22442f14869a024832c220a8ea1865fab4b841a46ef5e882b939c5a23/check_jsonschema-0.38.1-py3-none-any.whl", hash = "sha256:7b73ac5343303a266e03eb0009a4e15f5af5714a07f5162dd6a05e814ed7048a", size = 427994, upload-time = "2026-09-22T22:22:09.344Z" },
 ]
 
 [[package]]
