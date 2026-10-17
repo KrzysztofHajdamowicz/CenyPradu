@@ -18,6 +18,7 @@ Automatyczne pobieranie godzinowych cen energii elektrycznej z TGE (Towarowa Gie
 scripts/
   scrape_tge.py           Python scraper (requests + BeautifulSoup + lxml)
 pyproject.toml            Zależności Python (uv)
+.python-version           Przypięta wersja Pythona dla uv (3.14)
 uv.lock                   Lockfile zależności
 .github/workflows/
   scrape-prices.yml       Cron 10:00 UTC, workflow_dispatch z delivery_date
