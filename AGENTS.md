@@ -18,14 +18,14 @@ Automatyczne pobieranie godzinowych cen energii elektrycznej z TGE (Towarowa Gie
 scripts/
   scrape_tge.py           Python scraper (requests + BeautifulSoup + lxml)
 pyproject.toml            Zależności Python (uv)
-.python-version           Przypięta wersja Pythona dla uv (3.14)
+.python-version           Przypięta wersja Pythona dla uv (3.15)
 uv.lock                   Lockfile zależności
 .github/workflows/
   scrape-prices.yml       Cron 10:00 UTC, workflow_dispatch z delivery_date
-  ci.yml                  CI: lint Python (ruff), test scraper, walidacja taryf, actionlint
+  ci.yml                  CI: lint Python (ruff), test scraper, walidacja taryf, actionlint, auto-merge Dependabota
   sbom.yml                Generowanie SBOM (CycloneDX) przy zmianach *.py
 .github/
-  dependabot.yml          Automatyczne PRy z aktualizacjami zależności (uv + actions)
+  dependabot.yml          Automatyczne PRy z aktualizacjami zależności (uv + actions), minor/patch grupowane
 data/prices/
   index.json              Indeks dostępnych dat {"dates": [...], "latest": "..."}
   YYYY-MM-DD.json         Ceny godzinowe Fixing I
@@ -86,7 +86,7 @@ Harmonogram stref: `"HH:MM-HH:MM"` (czas lokalny), typy dni: `weekday`/`saturday
 ## Konwencje kodowania
 
 - **Język:** polski (komentarze, docstringi, logi, UI, commity)
-- **Python:** snake_case, type hints (3.14+), logi na stderr, `argparse` dla CLI
+- **Python:** snake_case, type hints (3.15+), logi na stderr, `argparse` dla CLI
 - **Zarządzanie pakietami:** `uv` (nie pip), zależności w `pyproject.toml`, lockfile `uv.lock`
 - **JavaScript:** camelCase, ES2022 modules, vanilla (bez frameworków/bundlerów)
 - **Nazwy plików:** snake_case (Python), kebab-case (taryfy JSON)
@@ -109,3 +109,5 @@ Workflow `scrape-prices.yml`:
 - `scraped_webpage.html` w root to artefakt debugowy, nie część systemu
 - GitHub Actions pinowane do pełnych SHA (supply chain security)
 - Dependabot automatycznie tworzy PRy z aktualizacjami zależności co tydzień
+- PRy Dependabota z aktualizacjami minor/patch (grupowane per ekosystem) są mergowane automatycznie
+  przez job `dependabot-automerge` w `ci.yml` po przejściu wszystkich jobów CI; major — ręcznie
