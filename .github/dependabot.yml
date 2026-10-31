@@ -1,5 +1,9 @@
 version: 2
 
+# Aktualizacje minor/patch są grupowane w jeden PR na ekosystem
+# i mergowane automatycznie po zielonym CI (job "dependabot-automerge" w ci.yml).
+# Aktualizacje major przychodzą jako osobne PRy i wymagają ręcznego przeglądu.
+
 updates:
   # Zależności Python (uv/pyproject.toml)
   - package-ecosystem: "uv"
@@ -13,6 +17,11 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "deps:"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -26,3 +35,8 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "deps:"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
