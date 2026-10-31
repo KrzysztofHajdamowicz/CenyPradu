@@ -8,6 +8,7 @@ URL strony: https://tge.pl/energia-elektryczna-rdn?dateShow=DD-MM-YYYY
 Struktura HTML:
   Tabela: #rdn  (klasy: table table-hover table-rdb)
   Wiersze godzinowe: td[0]="YYYY-MM-DD_H01", td[1]="60", td[2]=cena Fixing I PLN/MWh
+                     Przy zmianie czasu na zimowy (25 h) dodatkowa godzina: "_H02A"
   Wiersze 15-min:    td[0]="YYYY-MM-DD_Q00:15", td[1]="15" — ignorujemy
   Data:    .kontrakt-date > small  ("dla dostawy w dniu DD-MM-YYYY")
 
@@ -46,9 +47,9 @@ OUTPUT_DIR = "data/prices"
 MIN_PRICE = -2_000.0  # Ujemne ceny możliwe przy nadpodaży OZE
 MAX_PRICE = 10_000.0
 
-# Liczba godzin: 23 (spring-forward), 24 (normalny dzień), 25 (fall-back)
-MIN_HOURS = 23
-MAX_HOURS = 25
+# Identyfikator godziny w tabeli TGE: "_H01".."_H24". Przy zmianie czasu na zimowy
+# TGE dodaje powtórzoną godzinę z literą, np. "_H02A" (doba ma wtedy 25 godzin).
+HOUR_LABEL_RE = re.compile(r"_H(\d{2})([A-Z]?)$", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -105,9 +106,10 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
       - td[3]: wolumen Fixing I (MWh) — ignorujemy
       - ...
 
-    Filtrujemy tylko wiersze godzinowe: identyfikator kończy się na _H\\d{2}.
-    Kolejność wierszy w HTML jest chronologiczna (H01 ... H24/H25).
-    Na dzień fall-back H03 pojawi się dwukrotnie (25 wierszy łącznie).
+    Filtrujemy tylko wiersze godzinowe: identyfikator kończy się na _H\\d{2}
+    z opcjonalną literą. Na dzień fall-back TGE dodaje godzinę "H02A"
+    (25 wierszy łącznie). Wiersze sortujemy po (numer godziny, litera), więc
+    H02A trafia między H02 a H03 niezależnie od pozycji w tabeli HTML.
     """
     from bs4 import BeautifulSoup
 
@@ -126,7 +128,8 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
         )
         return []
 
-    prices: list[float] = []
+    # (numer godziny, litera, etykieta, cena)
+    hours: list[tuple[int, str, str, float]] = []
     for row in tbody.select("tr"):
         tds = row.select("td")
         if len(tds) < 3:
@@ -134,8 +137,9 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
 
         instrument = tds[0].get_text(strip=True)
 
-        # Filtruj tylko wiersze godzinowe: np. "2026-02-28_H01", "2026-02-28_H24"
-        if not re.search(r"_H\d{2}$", instrument):
+        # Filtruj tylko wiersze godzinowe: np. "2026-02-28_H01", "2026-10-25_H02A"
+        match = HOUR_LABEL_RE.search(instrument)
+        if match is None:
             continue
 
         price_text = tds[2].get_text(strip=True)  # td[3] (1-indexed) = Fixing I kurs
@@ -147,11 +151,32 @@ def parse_html_table(html: str, delivery_date: date) -> list[float]:
             )
             continue
 
-        prices.append(price)
-        hour_label = instrument.split("_")[-1]  # "H01", "H02", ...
-        print(f"  {hour_label} → {price:.2f} PLN/MWh", file=sys.stderr)
+        suffix = match.group(2).upper()
+        label = f"H{match.group(1)}{suffix}"  # "H01", "H02", "H02A", ...
+        hours.append((int(match.group(1)), suffix, label, price))
 
-    return prices
+    html_order = [h[2] for h in hours]
+    hours.sort(key=lambda h: (h[0], h[1]))
+    if html_order != [h[2] for h in hours]:
+        print(
+            "WARN: kolejność godzin w tabeli TGE różni się od chronologicznej "
+            f"(w HTML: {', '.join(html_order)}) — posortowano.",
+            file=sys.stderr,
+        )
+
+    labels = [h[2] for h in hours]
+    duplicates = sorted({label for label in labels if labels.count(label) > 1})
+    if duplicates:
+        print(
+            f"ERROR: zduplikowane godziny w tabeli TGE: {', '.join(duplicates)}.",
+            file=sys.stderr,
+        )
+        return []
+
+    for _, _, label, price in hours:
+        print(f"  {label} → {price:.2f} PLN/MWh", file=sys.stderr)
+
+    return [h[3] for h in hours]
 
 
 def _verify_page_date(soup, delivery_date: date) -> None:
@@ -238,9 +263,9 @@ def build_price_list(delivery_date: date, prices: list[float]) -> list[dict]:
 
     Przykład fall-back (2026-10-25, 25 godzin):
       ordinal 0 → 00:00+02:00 (H01, CEST)
-      ordinal 2 → 02:00+02:00 (H03a, CEST — przed cofnięciem zegarka)
-      ordinal 3 → 02:00+01:00 (H03b, CET — po cofnięciu zegarka)
-      ordinal 24 → 23:00+01:00 (H25, CET)
+      ordinal 2 → 02:00+02:00 (H02A, CEST — przed cofnięciem zegarka)
+      ordinal 3 → 02:00+01:00 (H03,  CET — po cofnięciu zegarka)
+      ordinal 24 → 23:00+01:00 (H24, CET)
 
     Przykład spring-forward (2026-03-29, 23 godziny):
       ordinal 1 → 01:00+01:00 (CET)
@@ -288,15 +313,31 @@ def _format_local_dt(dt: datetime) -> str:
 # ---------------------------------------------------------------------------
 
 
+def expected_hours(delivery_date: date) -> int:
+    """
+    Zwraca liczbę godzin w dobie dostawy (czas Europe/Warsaw):
+    23 (zmiana na czas letni), 24 (zwykły dzień), 25 (zmiana na czas zimowy).
+    """
+    start = datetime(
+        delivery_date.year, delivery_date.month, delivery_date.day, tzinfo=WARSAW_TZ
+    )
+    next_day = delivery_date + timedelta(days=1)
+    end = datetime(next_day.year, next_day.month, next_day.day, tzinfo=WARSAW_TZ)
+    # Odejmowanie w UTC — przy tym samym tzinfo Python liczy różnicę "na zegarze"
+    return int((end.astimezone(UTC) - start.astimezone(UTC)) / timedelta(hours=1))
+
+
 def validate_prices(prices: list[dict], delivery_date: date) -> None:
     """
     Sprawdza poprawność pobranych danych. Rzuca ValueError przy problemie.
     """
     n = len(prices)
-    if n < MIN_HOURS or n > MAX_HOURS:
+    expected = expected_hours(delivery_date)
+    if n != expected:
         raise ValueError(
-            f"Nieoczekiwana liczba godzin: {n} (oczekiwano {MIN_HOURS}–{MAX_HOURS}).\n"
-            "  Sprawdź: zmiana czasu DST, lub błąd parsowania tabeli TGE."
+            f"Nieoczekiwana liczba godzin: {n} (oczekiwano {expected} dla "
+            f"{delivery_date.isoformat()}).\n"
+            "  Sprawdź: zmiana czasu DST (np. godzina H02A), lub błąd parsowania tabeli TGE."
         )
 
     date_str = delivery_date.strftime("%Y-%m-%d")
@@ -560,7 +601,7 @@ def main(argv: list[str] | None = None) -> None:
         ok = verify_prices(delivery_date, prices)
         sys.exit(0 if ok else 1)
 
-    price_file = os.path.join(OUTPUT_DIR, f"{date_str}.json")
+    price_file = _price_file_path(delivery_date)
     if os.path.exists(price_file) and not args.force:
         print(f"Plik {price_file} już istnieje — nic do zrobienia.", file=sys.stderr)
         sys.exit(0)

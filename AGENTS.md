@@ -35,6 +35,8 @@ data/tariffs/
 web/js/
   tariffs.js              Kalkulator kosztów (flat, tou, seasonal)
   holidays.js             Polskie święta (stałe + ruchome wg Wielkanocy)
+tests/
+  test_scrape_tge.py      Testy offline scrapera (unittest, bez sieci)
 docs/
   architecture.md         Architektura systemu
   task-1-scraper.md       Specyfikacja scrapera (uaktualniona)
@@ -47,10 +49,10 @@ docs/
 1. URL: `https://tge.pl/energia-elektryczna-rdn?dateShow=DD-MM-YYYY`
    - `dateShow` = delivery_date − 1 dzień
 2. Pobiera HTML przez `requests` z nagłówkami Chrome
-3. Parsuje tabelę `#rdn > tbody` — wiersze godzinowe (`_H01`–`_H24`), pomija 15-min (`_Q`)
+3. Parsuje tabelę `#rdn > tbody` — wiersze godzinowe (`_H01`–`_H24`; przy zmianie czasu na zimowy dodatkowo `_H02A`, sortowane chronologicznie), pomija 15-min (`_Q`)
 4. Cena Fixing I: `td[2]`, format polski (`312,50`)
 5. Buduje timestampy z UTC offset (Europe/Warsaw, obsługa DST 23/24/25h)
-6. Waliduje: 23–25 godzin, ceny w zakresie −500–10 000 PLN/MWh
+6. Waliduje: liczba godzin dokładnie zgodna z długością doby wg DST (23/24/25), ceny w zakresie −2 000–10 000 PLN/MWh
 7. Zapisuje do `data/prices/YYYY/MM/YYYY-MM-DD.json` + aktualizuje `index.json`
 
 CLI: `python scripts/scrape_tge.py [YYYY-MM-DD] [--force] [--verify]`
@@ -96,9 +98,9 @@ Harmonogram stref: `"HH:MM-HH:MM"` (czas lokalny), typy dni: `weekday`/`saturday
 
 Workflow `scrape-prices.yml`:
 - Trigger: cron `0 10 * * *` (11:00 CET / 12:00 CEST) + `workflow_dispatch`
-- Input: `delivery_date` (YYYY-MM-DD, opcjonalny)
+- Input: `delivery_date` (YYYY-MM-DD, opcjonalny), `force` (nadpisanie istniejącego pliku, np. poprawka błędnego dnia)
 - Kroki: checkout → uv sync → `scrape_tge.py` → git commit+push
-- CI (`ci.yml`): ruff lint+format, test scraper, walidacja JSON Schema taryf, actionlint
+- CI (`ci.yml`): ruff lint+format, test scraper + testy jednostkowe (`tests/`), walidacja JSON Schema taryf, actionlint
 - SBOM (`sbom.yml`): CycloneDX SBOM generowany przy zmianach *.py, atestowany Sigstore
 - Commit msg: `data: ceny TGE Fixing I dla YYYY-MM-DD`
 

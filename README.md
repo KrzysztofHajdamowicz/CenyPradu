@@ -52,6 +52,12 @@ uv run python scripts/scrape_tge.py --force 2026-03-01
 uv run python scripts/scrape_tge.py --verify 2026-03-01
 ```
 
+Testy offline (bez dostępu do sieci):
+
+```bash
+uv run python -m unittest discover -s tests -v
+```
+
 | Parametr    | Opis                                                                 |
 | ----------- | -------------------------------------------------------------------- |
 | `date`      | Opcjonalna data dostawy `YYYY-MM-DD` (domyślnie: jutro)             |
@@ -59,6 +65,7 @@ uv run python scripts/scrape_tge.py --verify 2026-03-01
 | `--verify`  | Pobiera dane i porównuje z zapisanym JSON (nie modyfikuje pliku)     |
 
 Zmienna środowiskowa `DELIVERY_DATE` jest nadal obsługiwana (używana w GitHub Actions).
+Poprawkę błędnie pobranego dnia można zrobić z GitHub Actions: workflow „Scrape TGE Prices” → *Run workflow* z `delivery_date` i zaznaczonym `force`.
 
 ## Źródło danych
 
